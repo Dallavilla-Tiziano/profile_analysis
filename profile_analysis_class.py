@@ -400,7 +400,7 @@ class ProfileAnalysis:
         models_scores['sigmoidal'] = sigmoid_scores['sigmoidal']
         return models_scores, poly_scores, sigmoid_scores, poly_models, sig_models
 
-    def random_polynomial_fitting(self, table, mad, use_weights):
+    def random_polynomial_fitting(self, table, mad):
         """POLYNOMIAL FITTING with RANDOM PERMUTATION."""
         poly_rnd_scores = []
         for degree in range(1, self.degree_2_test+1):
@@ -408,23 +408,23 @@ class ProfileAnalysis:
             poly_fit_perm_score = pd.DataFrame(index=table.index)
             for i in range(0, self.rnd_perm_n):
                 print(f'permutation number {i} of {self.rnd_perm_n}')
-                results = self.polynomial_fitting(table.sample(frac=1, axis=1), degree, mad.sample(frac=1, axis=1), use_weights)
+                results = self.polynomial_fitting(table.sample(frac=1, axis=1), degree, mad.sample(frac=1, axis=1))
                 poly_fit_perm_score = poly_fit_perm_score.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
             poly_rnd_scores.append(poly_fit_perm_score)
         return poly_rnd_scores
 
-    def random_sigmoidal_fitting(self, table, guess_bounds, mad, use_weights):
+    def random_sigmoidal_fitting(self, table, guess_bounds, mad):
         """SIGMOIDAL FITTING with RANDOM PERMUTATION."""
         random_sig_df = pd.DataFrame(index=table.index)
         sig_rand_param = {}
         print(f'Fitting random permutated ({self.rnd_perm_n} times) data with simoid model')
         for i in range(0, self.rnd_perm_n):
-            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1), use_weights)
+            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1))
             sig_rand_param[f'sig_p_{i}'] = results[1]
             random_sig_df = random_sig_df.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
         return random_sig_df
 
-    def fit_random_data(self, table, mad, guess_bounds=False, use_weights=False):
+    def fit_random_data(self, table, mad, guess_bounds=False):
         """Fit continuum and sigmoid models on random permutation of
         median data.
         Parameters
@@ -439,9 +439,9 @@ class ProfileAnalysis:
         load_results1 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'polynomial_random_fitting.pkl']), pkl=1)
         load_results2 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'sigmoidal_random_fitting.pkl']), pkl=1)
         if load_results2.empty:
-            poly_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_polynomial_fitting)(group, mad, use_weights) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
+            poly_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_polynomial_fitting)(group, mad) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             print('done polynomial')
-            sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds, mad, use_weights) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
+            sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds, mad) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             rand_fitting_score_poly = []
             for i in range(0, self.degree_2_test):
                 degree_results = pd.DataFrame()

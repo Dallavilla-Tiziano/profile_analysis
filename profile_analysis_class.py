@@ -279,27 +279,17 @@ class ProfileAnalysis:
 
         return medians, mad
 
-    def polynomial_fitting(self, table, i, mad, use_weights):
+    def polynomial_fitting(self, table, i, mad):
         """POLYNOMIAL FITTING FOR EACH ROW OF TABLE."""
         poly_fit_results = pd.DataFrame(index=table.index)
         fitting_score = pd.DataFrame(columns=['feature', i])
         models = {}
         for index, row in table.iterrows():
-            if use_weights:
-                weights = np.array(mad.loc[index])
-                model, notused = np.polyfit(self.x, row.to_list(), i, w=np.sqrt(self.samplesPerSection), cov='unscaled')
-            else:
-                model = np.polyfit(self.x, row.to_list(), i)
-            # model = model.convert()
+            model = np.polyfit(self.x, row.to_list(), i)
             model = model[::-1]
-            if use_weights:
-                temp = pd.Series([index, r2_score(row.to_list(),
-                                 np.polynomial.polynomial.polyval(self.x, model), sample_weight=np.sqrt(self.samplesPerSection))],
-                                 index=fitting_score.columns)
-            else:
-                temp = pd.Series([index, r2_score(row.to_list(),
-                                 np.polynomial.polynomial.polyval(self.x, model))],
-                                 index=fitting_score.columns)
+            temp = pd.Series([index, r2_score(row.to_list(),
+                             np.polynomial.polynomial.polyval(self.x, model))],
+                             index=fitting_score.columns)
             fitting_score = fitting_score.append(temp, ignore_index=True)
             models[index] = model
         fitting_score.set_index('feature', inplace=True)
@@ -325,30 +315,20 @@ class ProfileAnalysis:
                                                  self.x,
                                                  row.to_list(),
                                                  method='dogbox',
-                                                 maxfev=10000,
+                                                 maxfev=3000,
                                                  bounds=self.bounds)
                 else:
                     parameters, pcov = curve_fit(self.sigmoid_func,
                                                  self.x,
                                                  row.to_list(),
                                                  method='dogbox',
-                                                 maxfev=10000)
+                                                 maxfev=3000)
                 score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
                                                       parameters[2], parameters[3]))
             except (RuntimeError) as e:
-                try:
-                    if guess_bounds:
-                        parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
-                                               method='dogbox', bounds=self.bounds)
-                    else:
-                        parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
-                                               method='dogbox')
-                    score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
-                                                          parameters[2], parameters[3]))
-                except RuntimeError as e:
-                    print('no solution was found!')
-                    score = 0
-                    parameters = [1, 1, 1, 1]
+                print('no solution was found!')
+                score = np.nan
+                parameters = [-999, -999, -999, -999]
 
             temp = pd.Series([index, score], index=fitting_score.columns)
             fitting_score = fitting_score.append(temp, ignore_index=True)

@@ -311,7 +311,7 @@ class ProfileAnalysis:
     def sigmoid_func(self, x, x0, y0, c, k):
         return c / (1 + np.exp(-k*(x-x0))) + y0
 
-    def sigmoid_fitting(self, table, guess_bounds, mad, use_weights):
+    def sigmoid_fitting(self, table, guess_bounds, mad):
         """SIGMOIDAL FITTING FOR EACH ROW OF TABLE."""
         fitting_score = pd.DataFrame(columns=['feature', 'sigmoidal'])
         models = {}
@@ -319,78 +319,36 @@ class ProfileAnalysis:
             y0_min = row.min()
             y0_max = row.max()
             self.bounds = ([0, -y0_max, -y0_max, -1000], [9, y0_max, y0_max, 1000])
-            if use_weights:
-                # weights = np.array(mad.loc[index])
-                # results, parameters = self.sigfit_gene_fast(self.x, row.to_list(), index)
+            try:
+                if guess_bounds:
+                    parameters, pcov = curve_fit(self.sigmoid_func,
+                                                 self.x,
+                                                 row.to_list(),
+                                                 method='dogbox',
+                                                 maxfev=10000,
+                                                 bounds=self.bounds)
+                else:
+                    parameters, pcov = curve_fit(self.sigmoid_func,
+                                                 self.x,
+                                                 row.to_list(),
+                                                 method='dogbox',
+                                                 maxfev=10000)
+                score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
+                                                      parameters[2], parameters[3]))
+            except (RuntimeError) as e:
                 try:
                     if guess_bounds:
-                        parameters, pcov = curve_fit(self.sigmoid_func,
-                                                     self.x,
-                                                     row.to_list(),
-                                                     maxfev=10000,
-                                                     # method='dogbox',
-                                                     bounds=self.bounds,
-                                                     sigma=np.sqrt(self.samplesPerSection),
-                                                     absolute_sigma=True)
+                        parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
+                                               method='dogbox', bounds=self.bounds)
                     else:
-                        parameters, pcov = curve_fit(self.sigmoid_func,
-                                                     self.x,
-                                                     row.to_list(),
-                                                     maxfev=10000,
-                                                     # method='dogbox',
-                                                     sigma=np.sqrt(self.samplesPerSection),
-                                                     absolute_sigma=True)
-                    score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
-                                                          parameters[2], parameters[3]), sample_weight=np.sqrt(self.samplesPerSection))
-                except (RuntimeError) as e:
-                    try:
-                        if guess_bounds:
-                            parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
-                                                   method='dogbox', bounds=self.bounds,
-                                                   sigma=np.sqrt(self.samplesPerSection),
-                                                   absolute_sigma=True)
-                        else:
-                            parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
-                                                   method='dogbox',
-                                                   sigma=np.sqrt(self.samplesPerSection),
-                                                   absolute_sigma=True)
-                        score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
-                                                              parameters[2], parameters[3]), sample_weight=np.sqrt(self.samplesPerSection))
-                    except RuntimeError as e:
-                        print('no solution was found!')
-                        score = 0
-                        parameters = [1, 1, 1, 1]
-            else:
-                try:
-                    if guess_bounds:
-                        parameters, pcov = curve_fit(self.sigmoid_func,
-                                                     self.x,
-                                                     row.to_list(),
-                                                     method='dogbox',
-                                                     maxfev=10000,
-                                                     bounds=self.bounds)
-                    else:
-                        parameters, pcov = curve_fit(self.sigmoid_func,
-                                                     self.x,
-                                                     row.to_list(),
-                                                     method='dogbox',
-                                                     maxfev=10000)
+                        parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
+                                               method='dogbox')
                     score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
                                                           parameters[2], parameters[3]))
-                except (RuntimeError) as e:
-                    try:
-                        if guess_bounds:
-                            parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
-                                                   method='dogbox', bounds=self.bounds)
-                        else:
-                            parameters, pcov = curve_fit(self.sigmoid_func, self.x, row.to_list(), maxfev=10000,
-                                                   method='dogbox')
-                        score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
-                                                              parameters[2], parameters[3]))
-                    except RuntimeError as e:
-                        print('no solution was found!')
-                        score = 0
-                        parameters = [1, 1, 1, 1]
+                except RuntimeError as e:
+                    print('no solution was found!')
+                    score = 0
+                    parameters = [1, 1, 1, 1]
 
             temp = pd.Series([index, score], index=fitting_score.columns)
             fitting_score = fitting_score.append(temp, ignore_index=True)
@@ -398,7 +356,7 @@ class ProfileAnalysis:
         fitting_score.set_index('feature', inplace=True)
         return fitting_score, models
 
-    def fit_data(self, table, mad, guess_bounds=True, use_weights=True):
+    def fit_data(self, table, mad, guess_bounds=True):
         """Fit continuum and sigmoid models on median data.
 
         Parameters
@@ -429,11 +387,11 @@ class ProfileAnalysis:
             poly_models = {}
             sig_models = {}
 
-            results = Parallel(n_jobs=self.cores)(delayed(self.polynomial_fitting)(table, degree, mad, use_weights) for degree in range(1, self.degree_2_test+1))
+            results = Parallel(n_jobs=self.cores)(delayed(self.polynomial_fitting)(table, degree, mad) for degree in range(1, self.degree_2_test+1))
             for result in results:
                 poly_scores = pd.concat([poly_scores, result[0]], axis=1)
                 poly_models[result[0].columns[0]] = result[1]
-            results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, use_weights) for i, group in table.groupby(np.arange(len(table)) // self.cores))
+            results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad) for i, group in table.groupby(np.arange(len(table)) // self.cores))
             for result in results:
                 sigmoid_scores = sigmoid_scores.append(result[0])
                 sig_models.update(result[1])

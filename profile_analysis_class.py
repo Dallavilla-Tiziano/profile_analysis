@@ -171,6 +171,33 @@ class ProfileAnalysis:
         else:
             os.makedirs(self.output)
 
+    def print_settings(self):
+        """Print the current settings."""
+        print(f"Settings file path: {self.settings_path}")
+        print(f"Defined sections: {self.sections}")
+        print(f"Section names for plotting: {self.sections4plots}")
+        print(f"Section distance from reference point: {self.x}")
+
+        print(f"Index colon name: {self.index_col}")
+        print(f"Maximum percentage of 0s to drop a sample: {self.sample_0_t}")
+        print(f"Random distribution area threshold: {self.t_area}")
+        print(f"Maximum polynomial degree to test: {self.degree_2_test}")
+        print(f"Number of random permutations: {self.rnd_perm_n}")
+        print(f"Type of data analysed: {self.data_type}")
+
+        print(f"Input data folder: {self.input_data}")
+        print(f"Raw data folder: {self.data_raw}")
+        print(f"Clinical data folder: {self.data_clinical}")
+        print(f"Median by section data folder: {self.sample_by_section}")
+        print(f"Observable fitting folder: {self.data_fitting}")
+        print(f"Random permutation fitting folder: {self.rnd_data_fitting}")
+        print(f"Figure folder: {self.figures}")
+        print(f"Output data folder: {self.output}")
+
+        print(f"Plot font size: {self.plot_font_size}")
+        print(f"Number of cores used: {self.cores}")
+        print(f"Documentation link: {self.github}")
+
     def check_step_completion(self, path, pkl=0):
         """Check if a step of the pipeline has been executed."""
         result = pd.DataFrame()

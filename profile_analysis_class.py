@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Library for the analysis of omics data profiles along an organ sections."""
 import os
-import errno
 from math import ceil
 import glob
 import pickle
 import configparser
 import shutil
-import warnings
+import ast
 import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.metrics import r2_score
@@ -19,7 +18,6 @@ from scipy.optimize import curve_fit
 from supervenn import supervenn
 import sympy as sym
 from tqdm import tqdm
-import json
 
 
 class ProfileAnalysis:
@@ -42,15 +40,15 @@ class ProfileAnalysis:
         Create the folder structure of the project
         """
         self.project_path = project_path
-        self.settings_path = '/'.join([self.project_path, 'SETTINGS.ini'])
+        self.settings_path = os.path.join(self.project_path, 'SETTINGS.ini')
         self.github = 'https://github.com/Dallavilla-Tiziano/profile_analysis'
         if os.path.isfile(self.settings_path):
             self.load_configuration()
-            self.create_project()
+            # self.create_project()
         else:
-            warnings.warn(f'''SETTINGS.ini could not be found, the project
-                          can't be created. Please check the documentation
-                          at {self.github}''', UserWarning)
+            raise FileNotFoundError("SETTINGS.ini could not be found, the "
+                                    "project can't be created. Please check "
+                                    f"the documentation at {self.github}")
 
     def load_configuration(self):
         """Read settings from SETTINGS.ini."""
@@ -59,8 +57,13 @@ class ProfileAnalysis:
         config.read(self.settings_path)
 
         # ORGAN VARIABLES
-        self.sections = json.loads(config['ORGAN']['sections'])
-        self.sections4plots = json.loads(config['ORGAN']['plot_names'])
+        try:
+            self.sections = ast.literal_eval(config['ORGAN']['sections'])
+        except SyntaxError as syntax_error:
+            print('Variable section format is not a dictionary! Halting...')
+            raise syntax_error
+
+        # self.sections4plots = json.loads(config['ORGAN']['plot_names'])
         self.cores = int(config['MISC']['Cores'])
         self.sample_0_t = float(config['ANALYSIS_SETTINGS']['Sample_0_threshold'])
         self.degree_2_test = int(config['ANALYSIS_SETTINGS']['polynomial_degree_to_test'])
@@ -68,22 +71,22 @@ class ProfileAnalysis:
         self.rnd_perm_n = int(config['ANALYSIS_SETTINGS']['random_permutation_n'])
         self.data_type = config['ANALYSIS_SETTINGS']['data_type']
         self.samples2sections = {}
-        # FOLDERS
-        self.project_path = '/'.join([self.working_folder, self.project_name])
-        self.input_data = '/'.join([self.project_path, 'input_data'])
-        self.data_raw = '/'.join([self.input_data, 'raw'])
-        self.data_clinical = '/'.join([self.input_data, 'clinical'])
-        self.meta_results = '/'.join([self.project_path, 'meta_results'])
-        self.sample_by_section = '/'.join([self.project_path, 'sample_by_section_1'])
-        self.data_fitting = '/'.join([self.project_path, 'data_fitting_2'])
-        self.rnd_data_fitting = '/'.join([self.project_path, 'random_data_fitting_3'])
-        self.figures = '/'.join([self.project_path, 'figures'])
-        self.output = '/'.join([self.project_path, 'output'])
-        # MATPLOTLIB
-        self.plot_font_size = int(config['MISC']['plot_font_size'])
-        self.t_area = float(config['ANALYSIS_SETTINGS']['threshold_area'])
-        self.index_col = config['ANALYSIS_SETTINGS']['index_col']
-        matplotlib.rcParams.update({'font.size': self.plot_font_size})
+        # # FOLDERS
+        # self.project_path = '/'.join([self.working_folder, self.project_name])
+        # self.input_data = '/'.join([self.project_path, 'input_data'])
+        # self.data_raw = '/'.join([self.input_data, 'raw'])
+        # self.data_clinical = '/'.join([self.input_data, 'clinical'])
+        # self.meta_results = '/'.join([self.project_path, 'meta_results'])
+        # self.sample_by_section = '/'.join([self.project_path, 'sample_by_section_1'])
+        # self.data_fitting = '/'.join([self.project_path, 'data_fitting_2'])
+        # self.rnd_data_fitting = '/'.join([self.project_path, 'random_data_fitting_3'])
+        # self.figures = '/'.join([self.project_path, 'figures'])
+        # self.output = '/'.join([self.project_path, 'output'])
+        # # MATPLOTLIB
+        # self.plot_font_size = int(config['MISC']['plot_font_size'])
+        # self.t_area = float(config['ANALYSIS_SETTINGS']['threshold_area'])
+        # self.index_col = config['ANALYSIS_SETTINGS']['index_col']
+        # matplotlib.rcParams.update({'font.size': self.plot_font_size})
 
     def create_project(self):
         """Create project folder structure."""

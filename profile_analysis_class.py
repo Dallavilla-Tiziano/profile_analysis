@@ -1,25 +1,21 @@
-import pandas as pd
-import configparser
+#!/usr/bin/env python3
+"""Library for the analysis of omics data profiles along an organ sections."""
 import os
-import shutil
-from joblib import Parallel, delayed
+import errno
+from math import ceil
 import glob
-import io
+import pickle
+import configparser
+import shutil
+import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.metrics import r2_score
 import numpy as np
-import pickle
 import matplotlib
 import matplotlib.pyplot as plt
-from scipy.optimize import leastsq
-from scipy.stats import mannwhitneyu, beta
-from math import ceil
-from multiprocessing import Pool
-from scipy.stats import norm, median_abs_deviation
+from scipy.stats import mannwhitneyu, beta, median_abs_deviation
 from scipy.optimize import curve_fit
-import os.path
-import errno
 from supervenn import supervenn
-from distutils.dir_util import copy_tree
 import sympy as sym
 from tqdm import tqdm
 

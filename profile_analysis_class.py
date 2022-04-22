@@ -215,7 +215,6 @@ class ProfileAnalysis:
         """
         Assign each sample to a section.
         Create a class dictionary 'samples2sections' that can be accessed
-        This function is executed by default during initialization
         """
         # DATA
         self.clinical_data = pd.read_csv(glob.glob(f'{self.data_clinical}/*.csv')[0])
@@ -223,16 +222,16 @@ class ProfileAnalysis:
         self.data_table.set_index(self.index_col, inplace=True)
         self.samplesPerSection = []
         for key in self.sections.keys():
-            samples_in_section = self.clinical_data[self.clinical_data['site_of_resection_or_biopsy'].isin(self.sections[key])]['sample_submitter_id'].to_list()
-            samples_in_section = set(samples_in_section).intersection(self.data_table.columns)
-            samples_in_section = list(samples_in_section)
-            self.samples2sections[key] = samples_in_section
-            self.samplesPerSection.append(len(samples_in_section))
+            section_samples = self.clinical_data[self.clinical_data['site_of_resection_or_biopsy'].isin(self.sections[key])]['sample_submitter_id'].to_list()
+            #Checking that samples in clinical data are in raw data
+            section_samples = set(section_samples).intersection(self.data_table.columns)
+            self.samples2sections[key] = list(section_samples)
+            self.samplesPerSection.append(len(section_samples))
         sample_to_section = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in
                                          self.samples2sections.items()]))
         sample_to_section.fillna('', inplace=True)
-        sample_to_section.to_csv('/'.join([self.meta_results,
-                                 '1_samples_by_sections.csv']), index=False)
+        sample_to_section.to_csv(os.path.join(self.output,
+                                 'samples_by_sections.csv'), index=False)
 
     def calculate_median_by_section(self, table, remove_outliers):
         """

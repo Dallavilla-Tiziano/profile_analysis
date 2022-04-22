@@ -55,38 +55,69 @@ class ProfileAnalysis:
         # Read file
         config = configparser.ConfigParser()
         config.read(self.settings_path)
-
-        # ORGAN VARIABLES
         try:
             self.sections = ast.literal_eval(config['ORGAN']['sections'])
         except SyntaxError as syntax_error:
-            print('Variable section format is not a dictionary! Halting...')
-            raise syntax_error
-
-        # self.sections4plots = json.loads(config['ORGAN']['plot_names'])
-        self.cores = int(config['MISC']['Cores'])
-        self.sample_0_t = float(config['ANALYSIS_SETTINGS']['Sample_0_threshold'])
-        self.degree_2_test = int(config['ANALYSIS_SETTINGS']['polynomial_degree_to_test'])
-        self.x = eval(config['ORGAN']['sections_distance_from_reference'])
-        self.rnd_perm_n = int(config['ANALYSIS_SETTINGS']['random_permutation_n'])
+            raise SyntaxError('Variable sections is not a dictionary!')\
+                from syntax_error
+        try:
+            self.sections4plots = ast.literal_eval(config['ORGAN']['plot_names'])
+        except SyntaxError as syntax_error:
+            raise SyntaxError('Variable plot_names is not a list!')\
+                from syntax_error
+        try:
+            self.x = ast.literal_eval(config['ORGAN']['sections_distance_from_reference'])
+        except SyntaxError as syntax_error:
+            raise SyntaxError("Variable sections_distance_from_reference"
+                              "is not a list!'") from syntax_error
+        try:
+            self.cores = int(config['MISC']['Cores'])
+        except ValueError as value_error:
+            raise ValueError("Variable cores is not an integer")\
+                from value_error
+        try:
+            self.sample_0_t = float(config['ANALYSIS_SETTINGS']['Sample_0_threshold'])
+        except ValueError as value_error:
+            raise ValueError("Variable sample_0_t is not a float")\
+                from value_error
+        try:
+            self.degree_2_test = int(config['ANALYSIS_SETTINGS']['polynomial_degree_to_test'])
+        except ValueError as value_error:
+            raise ValueError("Variable polynomial_degree_to_test is not an"
+                             "integer") from value_error
+        try:
+            self.rnd_perm_n = int(config['ANALYSIS_SETTINGS']['random_permutation_n'])
+        except ValueError as value_error:
+            raise ValueError("Variable random_permutation_n is not an"
+                             "integer") from value_error
         self.data_type = config['ANALYSIS_SETTINGS']['data_type']
+        if self.data_type not in ['numeric', 'binary']:
+            raise ValueError("data_type can only be 'numeric' or 'binary'."
+                             "Please check "
+                             f"the documentation at {self.github}")
         self.samples2sections = {}
-        # # FOLDERS
-        # self.project_path = '/'.join([self.working_folder, self.project_name])
-        # self.input_data = '/'.join([self.project_path, 'input_data'])
-        # self.data_raw = '/'.join([self.input_data, 'raw'])
-        # self.data_clinical = '/'.join([self.input_data, 'clinical'])
-        # self.meta_results = '/'.join([self.project_path, 'meta_results'])
-        # self.sample_by_section = '/'.join([self.project_path, 'sample_by_section_1'])
-        # self.data_fitting = '/'.join([self.project_path, 'data_fitting_2'])
-        # self.rnd_data_fitting = '/'.join([self.project_path, 'random_data_fitting_3'])
-        # self.figures = '/'.join([self.project_path, 'figures'])
-        # self.output = '/'.join([self.project_path, 'output'])
-        # # MATPLOTLIB
-        # self.plot_font_size = int(config['MISC']['plot_font_size'])
-        # self.t_area = float(config['ANALYSIS_SETTINGS']['threshold_area'])
-        # self.index_col = config['ANALYSIS_SETTINGS']['index_col']
-        # matplotlib.rcParams.update({'font.size': self.plot_font_size})
+        self.input_data = os.path.join(self.project_path, 'input_data')
+        self.data_raw = os.path.join(self.input_data, 'raw')
+        self.data_clinical = os.path.join(self.input_data, 'clinical')
+        self.sample_by_section = os.path.join(self.project_path,
+                                              'sample_by_section_1')
+        self.data_fitting = os.path.join(self.project_path, 'data_fitting_2')
+        self.rnd_data_fitting = os.path.join(self.project_path,
+                                             'random_data_fitting_3')
+        self.figures = os.path.join(self.project_path, 'figures')
+        self.output = os.path.join(self.project_path, 'output')
+        try:
+            self.plot_font_size = int(config['MISC']['plot_font_size'])
+        except ValueError as value_error:
+            raise ValueError("Variable plot_font_size is not an"
+                             "integer") from value_error
+        try:
+            self.t_area = float(config['ANALYSIS_SETTINGS']['threshold_area'])
+        except ValueError as value_error:
+            raise ValueError("Variable threshold_area is not a float")\
+                from value_error
+        self.index_col = config['ANALYSIS_SETTINGS']['index_col']
+        matplotlib.rcParams.update({'font.size': self.plot_font_size})
 
     def create_project(self):
         """Create project folder structure."""
@@ -94,7 +125,6 @@ class ProfileAnalysis:
         os.makedirs(self.input_data)
         os.makedirs(self.data_raw)
         os.makedirs(self.data_clinical)
-        os.makedirs(self.meta_results)
         os.makedirs(self.sample_by_section)
         os.makedirs(self.data_fitting)
         os.makedirs(self.rnd_data_fitting)

@@ -6,6 +6,7 @@ import glob
 import pickle
 import configparser
 import shutil
+import warnings
 import ast
 import pandas as pd
 from joblib import Parallel, delayed
@@ -44,7 +45,8 @@ class ProfileAnalysis:
         self.github = 'https://github.com/Dallavilla-Tiziano/profile_analysis'
         if os.path.isfile(self.settings_path):
             self.load_configuration()
-            # self.create_project()
+            self.create_project()
+            print(f'Project has been created!')
         else:
             raise FileNotFoundError("SETTINGS.ini could not be found, the "
                                     "project can't be created. Please check "
@@ -120,17 +122,54 @@ class ProfileAnalysis:
         matplotlib.rcParams.update({'font.size': self.plot_font_size})
 
     def create_project(self):
-        """Create project folder structure."""
-        print('Starting new project...')
-        os.makedirs(self.input_data)
-        os.makedirs(self.data_raw)
-        os.makedirs(self.data_clinical)
-        os.makedirs(self.sample_by_section)
-        os.makedirs(self.data_fitting)
-        os.makedirs(self.rnd_data_fitting)
-        os.makedirs(self.figures)
-        os.makedirs(self.output)
-        print(f'Project {self.project_name} has been created!')
+        """Create project folders structure."""
+        if os.path.isdir(self.input_data):
+            warnings.warn("Folder input_data already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.input_data)
+
+        if os.path.isdir(self.data_raw):
+            warnings.warn("Folder data_raw already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.data_raw)
+
+        if os.path.isdir(self.data_clinical):
+            warnings.warn("Folder data_clinical already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.data_clinical)
+
+        if os.path.isdir(self.sample_by_section):
+            warnings.warn("Folder sample_by_section already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.sample_by_section)
+
+        if os.path.isdir(self.data_fitting):
+            warnings.warn("Folder data_fitting already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.data_fitting)
+
+        if os.path.isdir(self.rnd_data_fitting):
+            warnings.warn("Folder rnd_data_fitting already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.rnd_data_fitting)
+
+        if os.path.isdir(self.figures):
+            warnings.warn("Folder figures already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.figures)
+
+        if os.path.isdir(self.output):
+            warnings.warn("Folder output already exist...skipping",
+                          UserWarning)
+        else:
+            os.makedirs(self.output)
 
     def check_step_completion(self, path, pkl=0):
         """Check if a step of the pipeline has been executed."""

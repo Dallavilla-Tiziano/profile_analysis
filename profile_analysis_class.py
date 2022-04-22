@@ -7,6 +7,7 @@ import glob
 import pickle
 import configparser
 import shutil
+import warnings
 import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.metrics import r2_score
@@ -18,36 +19,48 @@ from scipy.optimize import curve_fit
 from supervenn import supervenn
 import sympy as sym
 from tqdm import tqdm
+import json
 
 
 class ProfileAnalysis:
-    """ Class for the analysis of omics data along an organ sections"""
-    def __init__(self, settings, create_new=False):
-        # if setting file is specified the corresponding project is loaded
-        # else create a new project in /home/user/Documents/temp
-        self.settings_path = settings
-        if os.path.isfile(settings):
+    """Class for the analysis of omics data along an organ sections."""
+
+    def __init__(self, project_path, create_new=False):
+        """Init method of ProfileAnalysis class.
+
+        During class creation the init method will search for a file named
+        SETTINGS.ini in the path specified in the variable settings. If the
+        file is found than the project is created, if not a warning is issued.
+
+        Parameters
+        ----------
+        settings : string
+            path were the project needs to be created.
+
+        Returns
+        -------
+        Create the folder structure of the project
+        """
+        self.project_path = project_path
+        self.settings_path = '/'.join([self.project_path, 'SETTINGS.ini'])
+        self.github = 'https://github.com/Dallavilla-Tiziano/profile_analysis'
+        if os.path.isfile(self.settings_path):
             self.load_configuration()
-            if not os.path.exists(self.input_data) or create_new:
-                print('Unable to find existing project...creting a new one.')
-                self.create_project()
-            else:
-                print('Project loaded correctly.')
+            self.create_project()
         else:
-            self.create_example_config()
+            warnings.warn(f'''SETTINGS.ini could not be found, the project
+                          can't be created. Please check the documentation
+                          at {self.github}''', UserWarning)
 
     def load_configuration(self):
-        """Reading settings from file in self.settings_path"""
+        """Read settings from SETTINGS.ini."""
         # Read file
         config = configparser.ConfigParser()
         config.read(self.settings_path)
 
-        # PROJECT
-        # VARIABLES
-        self.working_folder = config['PROJECT']['working_folder']
-        self.project_name = config['PROJECT']['project_name']
-        self.sections = eval(config['ORGAN']['sections'])
-        self.sections4plots = eval(config['ORGAN']['sections_plot_names'])
+        # ORGAN VARIABLES
+        self.sections = json.loads(config['ORGAN']['sections'])
+        self.sections4plots = json.loads(config['ORGAN']['plot_names'])
         self.cores = int(config['MISC']['Cores'])
         self.sample_0_t = float(config['ANALYSIS_SETTINGS']['Sample_0_threshold'])
         self.degree_2_test = int(config['ANALYSIS_SETTINGS']['polynomial_degree_to_test'])
@@ -71,49 +84,6 @@ class ProfileAnalysis:
         self.t_area = float(config['ANALYSIS_SETTINGS']['threshold_area'])
         self.index_col = config['ANALYSIS_SETTINGS']['index_col']
         matplotlib.rcParams.update({'font.size': self.plot_font_size})
-
-    def create_example_config(self):
-        """Create an example configuration file."""
-        config = configparser.ConfigParser()
-        config['PROJECT'] = {'working_folder': '/home/ieo5417/Documenti',
-                             'project_name': 'temp'}
-        config['ORGAN'] = {'sections': {'Cecum': ['Cecum'],
-                           'Ascending colon': ['Ascending colon'],
-                           'Hepatic flexure of colon': ['Hepatic flexure of colon'],
-                           'Transverse colon': ['Transverse colon'],
-                           'Descending colon': ['Descending colon',
-                           'Splenic flexure of colon'],
-                           'Sigmoid colon': ['Sigmoid colon'],
-                           'Rectosigmoid junction': ['Rectosigmoid junction'],
-                           'Rectum, NOS': ['Rectum, NOS']},
-                           'sections_distance_from_reference': [145, 139, 118, 85, 48, 23, 15, 0],
-                           'sections_plot_names': ['Cecum',
-                                                    'Ascending colon',
-                                                    'Hepatic flexure',
-                                                    'Transverse colon',
-                                                    'Descending colon',
-                                                    'Sigmoid colon',
-                                                    'Rectosigmoid junction',
-                                                    'Rectum']}
-        # Sample_0_threshold: maximum percentage of 0 samples a gene is allowed to have before getting discarded from the analysis
-        config['ANALYSIS_SETTINGS'] = {'Sample_0_threshold': 0.1,
-                                       'polynomial_degree_to_test': 3,
-                                       'random_permutation_n': 100,
-                                       'threshold_area': 0.995,
-                                       'index_col': 'ensmbl_id'}
-        config['MISC'] = {'Cores': 40,
-                          'plot_font_size': 22}
-        if not os.path.exists(os.path.dirname(self.settings_path)):
-            try:
-                os.makedirs(os.path.dirname(self.settings_path))
-            except OSError as exc: # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise
-        with open(self.settings_path, "w") as cfgfile:
-            config.write(cfgfile)
-        cfgfile.close()
-        print(f'''An example configuration file has been created in {self.settings_path}.
-        Please edit options according to your needs and rerun this command.''')
 
     def create_project(self):
         """Create project folder structure."""

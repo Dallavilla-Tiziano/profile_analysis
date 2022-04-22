@@ -25,7 +25,7 @@ import json
 class ProfileAnalysis:
     """Class for the analysis of omics data along an organ sections."""
 
-    def __init__(self, project_path, create_new=False):
+    def __init__(self, project_path):
         """Init method of ProfileAnalysis class.
 
         During class creation the init method will search for a file named

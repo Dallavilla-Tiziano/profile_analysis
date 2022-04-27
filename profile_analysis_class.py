@@ -233,7 +233,7 @@ class ProfileAnalysis:
         sample_to_section.to_csv(os.path.join(self.output,
                                  'samples_by_sections.csv'), index=False)
 
-    def calculate_median_by_section(self, table, remove_outliers):
+    def calculate_median_by_section_numeric(self, table, remove_outliers):
         """
         Calculate samples median and mad values for each section.
         Genes with a % of zero measurments above 'sample_0_t'
@@ -264,7 +264,6 @@ class ProfileAnalysis:
                 for section in self.sections:
                     if remove_outliers:
                         section_samples = feature[self.samples2sections[section]]
-                        mad = median_abs_deviation(section_samples)
                         median = np.median(section_samples)
                         mad_inf = median - 2.5*mad
                         mad_sup = median + 2.5*mad
@@ -279,6 +278,29 @@ class ProfileAnalysis:
         return medians_df, mad_df
 
     def calculate_median_by_section_binary(self, table):
+        """
+        Calculate samples median and mad values for each section.
+        Genes with a % of zero measurments above 'sample_0_t'
+        (defined in settings) are discarded from the analysis.
+
+        Parameters
+        ----------
+        feature : DataFrame
+            row of self.data_table containing measurments for a single gene
+
+        remove_outliers : bool
+            if true remove samples outside range 'median+/-2.5*MAD' before
+            calculation of median by section
+
+        Returns
+        -------
+        medians_df : DataFrame
+            DataFrame with median values per section. If the number of zero
+            measurment is above 'sample_t_0' DataFrame will be empty.
+
+        mad_df : DataFrame
+            DataFrame with MAD for eah section.
+        """
         medians_df = pd.DataFrame()
         mad_df = pd.DataFrame()
         for index, row in table.iterrows():
@@ -319,7 +341,7 @@ class ProfileAnalysis:
             medians = pd.DataFrame()
             mad = pd.DataFrame()
             if self.data_type == 'numeric':
-                calc_res = Parallel(n_jobs=self.cores)(delayed(self.calculate_median_by_section)(group, remove_outliers) for i, group in self.data_table.groupby(np.arange(len(self.data_table)) // self.cores))
+                calc_res = Parallel(n_jobs=self.cores)(delayed(self.calculate_median_by_section_numeric)(group, remove_outliers) for i, group in self.data_table.groupby(np.arange(len(self.data_table)) // self.cores))
             elif self.data_type == 'binary':
                 calc_res = Parallel(n_jobs=self.cores)(delayed(self.calculate_median_by_section_binary)(group) for i, group in self.data_table.groupby(np.arange(len(self.data_table)) // self.cores))
 
@@ -588,7 +610,7 @@ class ProfileAnalysis:
         sig_perm_score_lists = []
         temp = []
         for column in sig_perm_fit_scores.columns:
-            temp = temp+sig_perm_fit_scores[sig_perm_fit_scores[column]>0.01][column].to_list()
+            temp = temp+sig_perm_fit_scores[sig_perm_fit_scores[column]>0.1][column].to_list()
         sig_perm_score_lists.append(temp)
 
         sig_obs_score_lists = []
@@ -702,7 +724,7 @@ class ProfileAnalysis:
         continuos_res.to_csv('/'.join([self.output, 'continuum.csv']))
         return continuos_res, sigmoid_res
 
-    def plot_fitting(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, boxplots=True, save_as=''):
+    def plot_fitting(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, boxplots=True, save_as='', no_fit=False, ylabel='', title=True):
         if (len(gene_indexes_list) % 2 != 0):
             vertical = len(gene_indexes_list)//2+1
         else:
@@ -730,10 +752,12 @@ class ProfileAnalysis:
                 score = round(scores_table.loc[key,'score'], 3)
             else:
                 score = 'NA'
-            plt.title(f'{key}, model:{degree}, score:{score}')
-            plt.plot(x, y, color='k', ls='-')
+            if title:
+                plt.title(f'{key}, model:{degree}, score:{score}')
+            if not no_fit:
+                plt.plot(x, y, color='k', ls='-')
             plt.xticks(ticks=self.x, labels=self.sections4plots, rotation=45, ha='right')
-            plt.ylabel('Bacteria abundance')
+            plt.ylabel(ylabel)
             l = l+1
             if l == 2:
                 h = h+1

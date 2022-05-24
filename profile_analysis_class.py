@@ -549,41 +549,67 @@ class ProfileAnalysis:
             rand_fitting_score_sig = load_results2
         return rand_fitting_score_poly, rand_fitting_score_sig
 
-    def gof_dist(self, obs_score_list, perm_score_list, degree):
+    def gof_dist(self, obs_score_list, perm_score_list, degree, dist_obs, dist_perm, pdf_perm, pdf_obs, vline):
         a, b, loc, scale = beta.fit(perm_score_list)
-        x = np.linspace(0, 1, 1000)
+        a1, b1, loc1, scale1 = beta.fit(obs_score_list)
+
+        x = np.linspace(0.01, 1, 1000)
         pdf = beta.pdf(x, a, b, loc, scale)
 
-        pdf_obs = beta.pdf(obs_score_list, a, b, loc, scale)
+        pdf_data = beta.pdf(x, a1, b1, loc1, scale1)
 
         threshold = beta.ppf(self.t_area, a, b, loc, scale)
         bins = np.histogram(np.hstack((obs_score_list, perm_score_list)), bins=100)[1]
         plt.figure(figsize=(10, 10))
-        plt.title(f'model degree: {degree}')
-        # plt.hist(obs_score_list, bins=bins, density=False, color='green', edgecolor='k', linewidth=1.2, alpha=0.5, label='observations');
-        graph = plt.hist(perm_score_list, bins=bins, density=True, color='red', edgecolor='k', linewidth=1.2, alpha=0.5, label='random permutations');
-        ylim = ceil(max(graph[0])+max(graph[0])*0.1)
-        plt.plot(x, pdf, 'r', linewidth=3, label='fitted distribution')
-        plt.plot(obs_score_list, pdf_obs, 'ok', markersize=10, label='observations')
+        # plt.title(f'model degree: {degree}')
+        if dist_obs:
+            graph = plt.hist(obs_score_list, bins=bins, density=True, color='green', edgecolor='k', linewidth=1.2, alpha=0.5, label='observations');
+        if dist_perm:
+            graph = plt.hist(perm_score_list, bins=bins, density=True, color='red', edgecolor='k', linewidth=1.2, alpha=0.5, label='random permutations');
+        if pdf_perm:
+            plt.plot(x, pdf, 'r', linewidth=3, label='fitted distribution')
+            max_pdf = max(pdf)
+        if pdf_obs:
+            plt.plot(x, pdf_data, 'g', linewidth=3, label='observations')
+            if max_pdf < max(pdf_data):
+                max_pdf = max(pdf_data)
+        if 'graph' in locals():
+            ylim = ceil(max(graph[0])+max(graph[0])*0.1)
+        else:
+            ylim = max_pdf
         plt.ylim(0, ylim)
-        plt.vlines(beta.ppf(self.t_area, a, b, loc, scale), 0, ylim, linestyles='--', color='k', label=f'{self.t_area} threshold')
+        if vline:
+            plt.vlines(beta.ppf(self.t_area, a, b, loc, scale), 0, ylim, linestyles='--', color='k', label=f'{self.t_area} threshold')
+
+        threshold = beta.ppf(self.t_area, a, b, loc, scale)
+        t = np.arange(threshold, 1, 0.01)
+        plt.fill_between(x=t, y1=beta.pdf(t, a1, b1, loc1, scale1),
+            where= (-1 < t)&(t < 1),
+            color= "g",
+            alpha= 0.2)
         plt.legend(loc='upper left')
         plt.ylabel('Density')
         plt.xlabel('R score')
         plt.tight_layout()
-        plt.savefig(f'{degree}.png')
+        plt.savefig(f'{degree}.svg', format="svg")
         plt.show()
         return threshold
 
     def gof_performance(self, poly_obs_score_lists, sig_obs_score_lists, poly_perm_score_lists, sig_perm_score_lists):
         plot_list = []
+        c = ['green', 'red','green', 'red','green', 'red','green', 'red','green', 'red']
+        medianprops = dict(color = 'k', linestyle='-')
+        boxprops = dict(linestyle='-', linewidth=1.5, color='k')
         for i in range(0, self.degree_2_test):
             plot_list.append(poly_obs_score_lists[i])
             plot_list.append(poly_perm_score_lists[i])
         plot_list.append(sig_obs_score_lists)
         plot_list.append(sig_perm_score_lists)
         plt.figure(figsize=(15, 10))
-        plt.boxplot(plot_list, showfliers=False)
+        bplot = plt.boxplot(plot_list, showfliers=False, patch_artist=True, medianprops=medianprops, boxprops=boxprops)
+        for patch, color in zip(bplot['boxes'], c):
+            patch.set_alpha(0.6)
+            patch.set_facecolor(color)
         labels = []
         for i in range(1, self.degree_2_test+1):
             labels.append(str(i))
@@ -597,7 +623,7 @@ class ProfileAnalysis:
         plt.savefig('/'.join([self.figures, 'gof_normal_vs_perm.png']), transparent=True)
         plt.show()
 
-    def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores):
+    def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores, dist_obs=True, dist_perm=True, pdf_perm=True, pdf_obs=True, vline=True):
         """
         Plot r score distribution for normal and permutated data for each model analysed
         """
@@ -613,23 +639,23 @@ class ProfileAnalysis:
             temp = temp+sig_perm_fit_scores[sig_perm_fit_scores[column]>0.1][column].to_list()
         sig_perm_score_lists.append(temp)
 
-        sig_obs_score_lists = []
-        sig_obs_score_lists.append(sig_obs_fit_scores['sigmoidal'].tolist())
+        sig_obs_score_lists = sig_obs_fit_scores['sigmoidal'].dropna().tolist()
+        sig_obs_score_lists = [item for item in sig_obs_score_lists if item >= 0]
         poly_obs_score_lists = []
         for column in poly_obs_fit_scores.columns:
             poly_obs_score_lists.append(poly_obs_fit_scores[column].to_list())
 
         self.gof_performance(poly_obs_score_lists, sig_obs_score_lists, poly_perm_score_lists, sig_perm_score_lists)
 
+        sig_threshold = self.gof_dist(sig_obs_score_lists, sig_perm_score_lists[0], 'sigmoid', dist_obs, dist_perm, pdf_perm, pdf_obs, vline)
+        stats, pvalue = mannwhitneyu(sig_obs_score_lists, sig_perm_score_lists[0], alternative='greater')
         stats_models = {}
+        stats_models['sigmoidal'] = [stats, pvalue, sig_threshold]
         for i in range(0, len(poly_perm_score_lists)):
-            poly_threshold = self.gof_dist(poly_obs_score_lists[i], poly_perm_score_lists[i], i+1)
+            poly_threshold = self.gof_dist(poly_obs_score_lists[i], poly_perm_score_lists[i], i+1, dist_obs, dist_perm, pdf_perm, pdf_obs, vline)
             stats, pvalue = mannwhitneyu(poly_obs_score_lists[i], poly_perm_score_lists[i], alternative='greater')
             stats_models[i+1] = [stats, pvalue, poly_threshold]
 
-        sig_threshold = self.gof_dist(sig_obs_score_lists[0], sig_perm_score_lists[0], 'sigmoid')
-        stats, pvalue = mannwhitneyu(sig_obs_score_lists[0], sig_perm_score_lists[0], alternative='greater')
-        stats_models['sigmoidal'] = [stats, pvalue, sig_threshold]
         self.stats_models = stats_models
         pd.DataFrame(stats_models).to_csv('/'.join([self.output, 'stats_models.csv']))
         return stats_models
@@ -724,7 +750,9 @@ class ProfileAnalysis:
         continuos_res.to_csv('/'.join([self.output, 'continuum.csv']))
         return continuos_res, sigmoid_res
 
-    def plot_fitting(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, boxplots=True, save_as='', no_fit=False, ylabel='', title=True):
+    def plot_fitting(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, boxplots=True, save_as='', plot_fit=True, ylabel='', title=True, set_lim=[]):
+        medianprops = dict(linestyle='None')
+        boxprops = dict(linestyle='-', linewidth=1.5, color='k')
         if (len(gene_indexes_list) % 2 != 0):
             vertical = len(gene_indexes_list)//2+1
         else:
@@ -735,13 +763,13 @@ class ProfileAnalysis:
         for key in gene_indexes_list:
             x = np.linspace(self.x[0], self.x[-1], 1000)
             axs = plt.subplot2grid((vertical, 2), (h, l))
-            plt.plot(self.x, list(medians.loc[key,:]), color='r', marker='o', ls='')
+            plt.plot(self.x, list(medians.loc[key,:]), color='r', marker='o', ls='', markeredgecolor='k', markeredgewidth=2, markersize=10)
             gene_dist = []
             if boxplots:
-                for section in self.sections:
+                for section in medians.columns:
                     gene_dist.append(self.data_table.loc[key, self.samples2sections[section]].to_list())
                 gene_dist = np.array(gene_dist, dtype=object)
-                plt.boxplot(gene_dist, showfliers=False)
+                plt.boxplot(gene_dist, showfliers=False, medianprops=medianprops, boxprops=boxprops)
             if model == 'sigmoid':
                 degree = 'sigmoid'
                 y = self.sigmoid_func(x, sig_models[key][0], sig_models[key][1], sig_models[key][2], sig_models[key][3])
@@ -754,8 +782,10 @@ class ProfileAnalysis:
                 score = 'NA'
             if title:
                 plt.title(f'{key}, model:{degree}, score:{score}')
-            if not no_fit:
-                plt.plot(x, y, color='k', ls='-')
+            if plot_fit:
+                plt.plot(x, y, color='red', ls='-', linewidth=2)
+            if set_lim:
+                plt.ylim(set_lim)
             plt.xticks(ticks=self.x, labels=self.sections4plots, rotation=45, ha='right')
             plt.ylabel(ylabel)
             l = l+1
@@ -764,7 +794,7 @@ class ProfileAnalysis:
                 l = 0
         plt.tight_layout()
         if save_as:
-            plt.savefig(save_as)
+            plt.savefig(save_as, format="svg")
         plt.show()
 
     def copytree(self, src, dst, symlinks=False, ignore=None):

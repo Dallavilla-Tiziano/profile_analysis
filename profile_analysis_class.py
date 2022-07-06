@@ -305,9 +305,9 @@ class ProfileAnalysis:
         mad_df = pd.DataFrame()
         for index, row in table.iterrows():
             for section in self.sections:
-                cnv=(row[self.samples2sections[section]]==1).sum()
+                cnv=(row[self.samples2sections[section]]>=1).sum()
                 nocnv=(row[self.samples2sections[section]]==0).sum()
-                frac = cnv/(cnv+nocnv)
+                frac = cnv/(cnv+nocnv)*100
                 medians_df.loc[index, section] = frac
         return medians_df, mad_df
 
@@ -567,10 +567,10 @@ class ProfileAnalysis:
         if dist_perm:
             graph = plt.hist(perm_score_list, bins=bins, density=True, color='red', edgecolor='k', linewidth=1.2, alpha=0.5, label='random permutations');
         if pdf_perm:
-            plt.plot(x, pdf, 'r', linewidth=3, label='fitted distribution')
+            plt.plot(x, pdf, 'r', linewidth=3, label='Permutations')
             max_pdf = max(pdf)
         if pdf_obs:
-            plt.plot(x, pdf_data, 'g', linewidth=3, label='observations')
+            plt.plot(x, pdf_data, 'g', linewidth=3, label='Observation')
             if max_pdf < max(pdf_data):
                 max_pdf = max(pdf_data)
         if 'graph' in locals():
@@ -579,7 +579,7 @@ class ProfileAnalysis:
             ylim = max_pdf
         plt.ylim(0, ylim)
         if vline:
-            plt.vlines(beta.ppf(self.t_area, a, b, loc, scale), 0, ylim, linestyles='--', color='k', label=f'{self.t_area} threshold')
+            plt.vlines(beta.ppf(self.t_area, a, b, loc, scale), 0, ylim, linestyles='--', color='k', label=f'{self.t_area*100}% threshold')
 
         threshold = beta.ppf(self.t_area, a, b, loc, scale)
         t = np.arange(threshold, 1, 0.01)
@@ -591,7 +591,7 @@ class ProfileAnalysis:
         plt.ylabel('Density')
         plt.xlabel('R score')
         plt.tight_layout()
-        plt.savefig(f'{degree}.svg', format="svg")
+        plt.savefig('/'.join([self.figures, f'{degree}.svg']), format="svg")
         plt.show()
         return threshold
 
@@ -620,7 +620,7 @@ class ProfileAnalysis:
         plt.ylabel('R2')
         plt.xlabel('Degree')
         plt.tight_layout()
-        plt.savefig('/'.join([self.figures, 'gof_normal_vs_perm.png']), transparent=True)
+        plt.savefig('/'.join([self.figures, 'gof_normal_vs_perm.svg']), format='svg', transparent=True)
         plt.show()
 
     def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores, dist_obs=True, dist_perm=True, pdf_perm=True, pdf_obs=True, vline=True):
@@ -636,7 +636,7 @@ class ProfileAnalysis:
         sig_perm_score_lists = []
         temp = []
         for column in sig_perm_fit_scores.columns:
-            temp = temp+sig_perm_fit_scores[sig_perm_fit_scores[column]>0.1][column].to_list()
+            temp = temp+sig_perm_fit_scores[sig_perm_fit_scores[column]>0.01][column].to_list()
         sig_perm_score_lists.append(temp)
 
         sig_obs_score_lists = sig_obs_fit_scores['sigmoidal'].dropna().tolist()
@@ -648,11 +648,13 @@ class ProfileAnalysis:
         self.gof_performance(poly_obs_score_lists, sig_obs_score_lists, poly_perm_score_lists, sig_perm_score_lists)
 
         sig_threshold = self.gof_dist(sig_obs_score_lists, sig_perm_score_lists[0], 'sigmoid', dist_obs, dist_perm, pdf_perm, pdf_obs, vline)
+        # stats, pvalue = mannwhitneyu(sig_obs_score_lists, sig_perm_score_lists[0])
         stats, pvalue = mannwhitneyu(sig_obs_score_lists, sig_perm_score_lists[0], alternative='greater')
         stats_models = {}
         stats_models['sigmoidal'] = [stats, pvalue, sig_threshold]
         for i in range(0, len(poly_perm_score_lists)):
             poly_threshold = self.gof_dist(poly_obs_score_lists[i], poly_perm_score_lists[i], i+1, dist_obs, dist_perm, pdf_perm, pdf_obs, vline)
+            # stats, pvalue = mannwhitneyu(poly_obs_score_lists[i], poly_perm_score_lists[i])
             stats, pvalue = mannwhitneyu(poly_obs_score_lists[i], poly_perm_score_lists[i], alternative='greater')
             stats_models[i+1] = [stats, pvalue, poly_threshold]
 
@@ -706,6 +708,7 @@ class ProfileAnalysis:
         if 'sigmoidal' in summary.columns:
             cont = summary[summary['sigmoidal'] == False]
             sig_raw = summary[summary['sigmoidal'] == True]
+            discarded = pd.DataFrame(columns=sig_raw.columns)
             sigmoid = pd.DataFrame(columns=sig_raw.columns)
             cont_significant_status = sig_raw.select_dtypes(include='bool')
             cont_score = sig_raw.select_dtypes(include='float')
@@ -719,9 +722,9 @@ class ProfileAnalysis:
                     max_index = cont_score.loc[index, indexes_to_compare].idxmax()
                     discard = 2
 
-                    if row[f'{max_index}_score']-row['sigmoidal_score'] > 0.2:
+                    if row[f'{max_index}_score']-row['sigmoidal_score'] > 0.15:
                         discard = 1
-                    elif row['sigmoidal_score'] - row[f'{max_index}_score'] > 0.2:
+                    elif row['sigmoidal_score'] - row[f'{max_index}_score'] > 0.15:
                         discard = 0
 
                     if discard == 1:
@@ -729,26 +732,34 @@ class ProfileAnalysis:
                     elif discard == 0:
                         sigmoid.loc[index] = row
                     else:
+                        discarded.loc[index] = row
                         print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
                 else:
                     sigmoid.loc[index] = row
         else:
             cont = summary
             sigmoid = pd.DataFrame()
+            discarded = pd.DataFrame()
 
         cont = cont.select_dtypes(include='float')
         sigmoid = sigmoid.select_dtypes(include='float')
+        discarded = discarded.select_dtypes(include='float')
         continuos_res = pd.DataFrame()
         sigmoid_res = pd.DataFrame()
+        discarded_res = pd.DataFrame()
         for index, row in cont.iterrows():
             continuos_res.loc[index, 'model'] = cont.loc[index].idxmax().split('_')[0]
             continuos_res.loc[index, 'score'] = cont.loc[index, cont.loc[index].idxmax()]
         for index, row in sigmoid.iterrows():
             sigmoid_res.loc[index, 'model'] = 'sigmoid'
             sigmoid_res.loc[index, 'score'] = sigmoid.loc[index, 'sigmoidal_score']
+        for index, row in discarded.iterrows():
+            discarded_res.loc[index, 'model'] = 'sigmoid'
+            # discarded_res.loc[index, 'score'] = sigmoid.loc[index, 'sigmoidal_score']
         sigmoid_res.to_csv('/'.join([self.output, 'sigmoidal.csv']))
         continuos_res.to_csv('/'.join([self.output, 'continuum.csv']))
-        return continuos_res, sigmoid_res
+        discarded_res.to_csv('/'.join([self.output, 'discarded.csv']))
+        return continuos_res, sigmoid_res, discarded_res
 
     def plot_fitting(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, boxplots=True, save_as='', plot_fit=True, ylabel='', title=True, set_lim=[]):
         medianprops = dict(linestyle='None')
@@ -776,25 +787,81 @@ class ProfileAnalysis:
             elif model == 'continuum':
                 degree = int(scores_table.loc[key,'model'])
                 y = np.polynomial.polynomial.polyval(x, poly_models[degree][key])
+            elif model == 'both':
+                degree = int(scores_table.loc[key,'model'])
+                y1 = self.sigmoid_func(x, sig_models[key][0], sig_models[key][1], sig_models[key][2], sig_models[key][3])
+                y2 = np.polynomial.polynomial.polyval(x, poly_models[degree][key])
             if key in scores_table.index:
                 score = round(scores_table.loc[key,'score'], 3)
             else:
                 score = 'NA'
             if title:
                 plt.title(f'{key}, model:{degree}, score:{score}')
-            if plot_fit:
+            if plot_fit and model!='both':
                 plt.plot(x, y, color='red', ls='-', linewidth=2)
+            elif plot_fit and model=='both':
+                plt.plot(x, y1, color='red', ls='-', linewidth=2)
+                plt.plot(x, y2, color='green', ls='-', linewidth=2)
             if set_lim:
                 plt.ylim(set_lim)
-            plt.xticks(ticks=self.x, labels=self.sections4plots, rotation=45, ha='right')
-            plt.ylabel(ylabel)
+            plt.xticks(ticks=self.x, labels=self.sections4plots, rotation=45, ha='right', fontsize=22)
+            plt.ylabel(ylabel, fontsize=22)
             l = l+1
             if l == 2:
                 h = h+1
                 l = 0
         plt.tight_layout()
         if save_as:
-            plt.savefig(save_as, format="svg")
+            plt.savefig('/'.join([self.figures, f'{save_as}']), format="svg")
+        plt.show()
+
+    def plot_fitting_bars(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, save_as='', plot_fit=True, ylabel='', title=True, set_lim=[]):
+        medianprops = dict(linestyle='None')
+        boxprops = dict(linestyle='-', linewidth=1.5, color='k')
+        if (len(gene_indexes_list) % 2 != 0):
+            vertical = len(gene_indexes_list)//2+1
+        else:
+            vertical = len(gene_indexes_list)//2
+        h = 0
+        l = 0
+        plt.figure(figsize=(20, 10*vertical))
+        for key in gene_indexes_list:
+            x = np.linspace(self.x[0], self.x[-1], 1000)
+            axs = plt.subplot2grid((vertical, 2), (h, l))
+            plt.bar(self.x, list(medians.loc[key,:]), color='grey', edgecolor='k')
+            gene_dist = []
+            if model == 'sigmoid':
+                degree = 'sigmoid'
+                y = self.sigmoid_func(x, sig_models[key][0], sig_models[key][1], sig_models[key][2], sig_models[key][3])
+            elif model == 'continuum':
+                degree = int(scores_table.loc[key,'model'])
+                y = np.polynomial.polynomial.polyval(x, poly_models[degree][key])
+            elif model == 'both':
+                degree = int(scores_table.loc[key,'model'])
+                y1 = self.sigmoid_func(x, sig_models[key][0], sig_models[key][1], sig_models[key][2], sig_models[key][3])
+                y2 = np.polynomial.polynomial.polyval(x, poly_models[degree][key])
+            if key in scores_table.index:
+                score = round(scores_table.loc[key,'score'], 3)
+            else:
+                score = 'NA'
+            if title:
+                plt.title(f'{key}, model:{degree}, score:{score}')
+            if plot_fit and model!='both':
+                plt.plot(x, y, color='red', ls='-', linewidth=2)
+            elif plot_fit and model=='both':
+                plt.plot(x, y1, color='red', ls='-', linewidth=2)
+                plt.plot(x, y2, color='green', ls='-', linewidth=2)
+            if set_lim:
+                plt.ylim(set_lim)
+            plt.xticks(ticks=self.x, labels=self.sections4plots, rotation=45, ha='right', fontsize=22)
+            plt.ylabel(ylabel, fontsize=22)
+            l = l+1
+            if l == 2:
+                h = h+1
+                l = 0
+        plt.tight_layout()
+        if save_as:
+            plt.savefig('/'.join([self.figures, f'{save_as}']), format="svg")
         plt.show()
 
     def copytree(self, src, dst, symlinks=False, ignore=None):

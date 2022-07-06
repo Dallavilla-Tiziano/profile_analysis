@@ -884,6 +884,32 @@ class ProfileAnalysis:
             os.mkdir(toDirectory)
             self.copytree(fromDirectory, toDirectory)
 
+    def plot_sample_distribution(self, save_as='samples_distribution.svg'):
+        """
+        Plot samples distribution in colon sections and save the figure.
+
+        Parameters
+        ----------
+        save_as : string
+            Save figure with the specified name (default: samples_distribution.svg)
+        """
+        sections = [val for sublist in self.sections.values() for val in sublist]
+        samplexsec = {}
+        for section in sections:
+            group = self.clinical_data[self.clinical_data['site_of_resection_or_biopsy'] == section]
+            i = 0
+            for index, row in group.iterrows():
+                if row['sample_submitter_id'] in self.data_table.columns:
+                    i = i+1
+            samplexsec[section] = i
+        plt.figure(figsize=(10, 8))
+        plt.bar(*zip(*samplexsec.items()), edgecolor='k')
+        plt.ylabel('Frequency')
+        plt.xticks(range(len(samplexsec.keys())), samplexsec.keys(), rotation=45, ha='right')
+        plt.tight_layout()
+        plt.title('Samples Distribution')
+        plt.savefig('/'.join([self.figures, f'{save_as}']), format="svg")
+
     def strict_sig_list(self, sigmoid_genes, sig_models, plot_der = False, plot_dist = False):
         section_l = []
         gene_list = []

@@ -387,7 +387,7 @@ class ProfileAnalysis:
     def sigmoid_func(self, x, x0, y0, c, k):
         return c / (1 + np.exp(-k*(x-x0))) + y0
 
-    def sigmoid_fitting(self, table, guess_bounds, mad):
+    def sigmoid_fitting(self, table, guess_bounds, mad, dog_allowed):
         """SIGMOIDAL FITTING FOR EACH ROW OF TABLE."""
         fitting_score = pd.DataFrame(columns=['feature', 'sigmoidal'])
         models = {}
@@ -396,13 +396,24 @@ class ProfileAnalysis:
             y0_max = row.max()
             self.bounds = ([0, -y0_max, -y0_max, -1000], [9, y0_max, y0_max, 1000])
             try:
-                if guess_bounds:
+                if guess_bounds and dog_allowed:
                     parameters, pcov = curve_fit(self.sigmoid_func,
                                                  self.x,
                                                  row.to_list(),
                                                  method='dogbox',
                                                  maxfev=3000,
                                                  bounds=self.bounds)
+                elif dog_allowed is False and guess_bounds is False:
+                    parameters, pcov = curve_fit(self.sigmoid_func,
+                                                 self.x,
+                                                 row.to_list(),
+                                                 maxfev=3000)
+                elif dog_allowed is False:
+                    parameters, pcov = curve_fit(self.sigmoid_func,
+                                                 self.x,
+                                                 row.to_list(),
+                                                 bounds=self.bounds,
+                                                 maxfev=3000)
                 else:
                     parameters, pcov = curve_fit(self.sigmoid_func,
                                                  self.x,
@@ -422,7 +433,7 @@ class ProfileAnalysis:
         fitting_score.set_index('feature', inplace=True)
         return fitting_score, models
 
-    def fit_data(self, table, mad, guess_bounds=True):
+    def fit_data(self, table, mad, guess_bounds=True, dog_allowed=True):
         """Fit continuum and sigmoid models on median data.
 
         Parameters
@@ -457,7 +468,7 @@ class ProfileAnalysis:
             for result in results:
                 poly_scores = pd.concat([poly_scores, result[0]], axis=1)
                 poly_models[result[0].columns[0]] = result[1]
-            results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad) for i, group in table.groupby(np.arange(len(table)) // self.cores))
+            results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in table.groupby(np.arange(len(table)) // self.cores))
             for result in results:
                 sigmoid_scores = sigmoid_scores.append(result[0])
                 sig_models.update(result[1])
@@ -499,18 +510,18 @@ class ProfileAnalysis:
             poly_rnd_scores.append(poly_fit_perm_score)
         return poly_rnd_scores
 
-    def random_sigmoidal_fitting(self, table, guess_bounds, mad):
+    def random_sigmoidal_fitting(self, table, guess_bounds, mad, dog_allowed):
         """SIGMOIDAL FITTING with RANDOM PERMUTATION."""
         random_sig_df = pd.DataFrame(index=table.index)
         sig_rand_param = {}
         print(f'Fitting random permutated ({self.rnd_perm_n} times) data with simoid model')
         for i in range(0, self.rnd_perm_n):
-            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1))
+            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1), dog_allowed)
             sig_rand_param[f'sig_p_{i}'] = results[1]
             random_sig_df = random_sig_df.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
         return random_sig_df
 
-    def fit_random_data(self, table, mad, guess_bounds=False):
+    def fit_random_data(self, table, mad, guess_bounds=False, dog_allowed=True):
         """Fit continuum and sigmoid models on random permutation of
         median data.
         Parameters
@@ -527,7 +538,7 @@ class ProfileAnalysis:
         if load_results2.empty:
             poly_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_polynomial_fitting)(group, mad) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             print('done polynomial')
-            sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds, mad) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
+            sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             rand_fitting_score_poly = []
             for i in range(0, self.degree_2_test):
                 degree_results = pd.DataFrame()
@@ -722,9 +733,9 @@ class ProfileAnalysis:
                     max_index = cont_score.loc[index, indexes_to_compare].idxmax()
                     discard = 2
 
-                    if row[f'{max_index}_score']-row['sigmoidal_score'] > 0.15:
+                    if row[f'{max_index}_score']-row['sigmoidal_score'] > 0.2:
                         discard = 1
-                    elif row['sigmoidal_score'] - row[f'{max_index}_score'] > 0.15:
+                    elif row['sigmoidal_score'] - row[f'{max_index}_score'] > 0.2:
                         discard = 0
 
                     if discard == 1:
@@ -815,7 +826,7 @@ class ProfileAnalysis:
             plt.savefig('/'.join([self.figures, f'{save_as}']), format="svg")
         plt.show()
 
-    def plot_fitting_bars(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, save_as='', plot_fit=True, ylabel='', title=True, set_lim=[]):
+    def plot_fitting_bars(self, scores_table, gene_indexes_list, medians, mad, poly_models, sig_models, model, save_as='', plot_fit=True, ylabel='', title=True, set_lim=[], plot_mad=True):
         medianprops = dict(linestyle='None')
         boxprops = dict(linestyle='-', linewidth=1.5, color='k')
         if (len(gene_indexes_list) % 2 != 0):
@@ -828,7 +839,10 @@ class ProfileAnalysis:
         for key in gene_indexes_list:
             x = np.linspace(self.x[0], self.x[-1], 1000)
             axs = plt.subplot2grid((vertical, 2), (h, l))
-            plt.bar(self.x, list(medians.loc[key,:]), color='grey', edgecolor='k')
+            if plot_mad:
+                plt.bar(self.x, list(medians.loc[key,:]),yerr=list(mad.loc[key,:]), color='grey', edgecolor='k')
+            else:
+                plt.bar(self.x, list(medians.loc[key,:]), color='grey', edgecolor='k')
             gene_dist = []
             if model == 'sigmoid':
                 degree = 'sigmoid'
@@ -887,6 +901,8 @@ class ProfileAnalysis:
     def plot_sample_distribution(self, save_as='samples_distribution.svg'):
         """
         Plot samples distribution in colon sections and save the figure.
+        Needs to be executed after create_samples_to_sections_table() or
+        an error will be triggered.
 
         Parameters
         ----------
@@ -910,7 +926,7 @@ class ProfileAnalysis:
         plt.title('Samples Distribution')
         plt.savefig('/'.join([self.figures, f'{save_as}']), format="svg")
 
-    def strict_sig_list(self, sigmoid_genes, sig_models, plot_der = False, plot_dist = False):
+    def strict_sig_list(self, sigmoid_genes, sig_models, plot_dist = False):
         section_l = []
         gene_list = []
         x = sym.Symbol('x')
@@ -932,20 +948,18 @@ class ProfileAnalysis:
             if section in ['Transverse colon', 'Descending colon']:
                 gene_list.append(key)
             section_l.append(section)
-            if plot_der:
-                y = self.sigmoid_func(x, sig_models[key][0], sig_models[key][1], sig_models[key][2], sig_models[key][3])
-                plt.plot(x, y, color='k', ls='-')
-                plt.plot(x, d_, color='r', ls='-')
-                plt.vlines(x[index_min], -3, 1, linestyles='--', color='k')
-            if plot_dist:
-                indexes = np.arange(len(self.sections))
-                width = 0.7
-                plt.bar(indexes, pd.Series(section_l).value_counts().reindex(self.sections), width, color='gray', edgecolor='k')
-                plt.xticks(indexes, self.sections, rotation=45, ha='right')
-                plt.ylabel('Number of infexion points per section')
-                plt.tight_layout()
-                plt.savefig('inflection_points_dist.png')
+        if plot_dist:
+            indexes = np.arange(len(self.sections))
+    #         width = 0.3
+            values = pd.Series(section_l).value_counts().reindex(self.sections)/len(section_l)*100
+            plt.bar(indexes, values, edgecolor='k', color = 'grey', linewidth=1.5)
+            plt.xticks(indexes, self.sections, rotation=45, ha='right')
+            plt.ylabel('Relative Frequency (%)')
+            # plt.ylim([0,50])
+            plt.title('Distribution of inflexion points')
+            plt.tight_layout()
+            plt.savefig('inflection_distribution_sigmoid.svg', format='svg')
         with open('/'.join([self.output, 'strict_sig_genes_list.txt']), 'w') as f:
             for item in gene_list:
                 f.write("%s\n" % item)
-        return section_l, gene_list
+        return gene_list, section_l

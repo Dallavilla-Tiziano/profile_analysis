@@ -275,6 +275,8 @@ class ProfileAnalysis:
                     mad = median_abs_deviation(values)
                     medians_df.loc[index, section] = median
                     mad_df.loc[index, section] = mad
+        medians_df.dropna(inplace=True)
+        mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 
     def calculate_median_by_section_binary(self, table):
@@ -309,6 +311,8 @@ class ProfileAnalysis:
                 nocnv=(row[self.samples2sections[section]]==0).sum()
                 frac = cnv/(cnv+nocnv)*100
                 medians_df.loc[index, section] = frac
+        medians_df.dropna(inplace=True)
+        mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 
     def median_by_section(self, remove_outliers, scale):
@@ -691,7 +695,7 @@ class ProfileAnalysis:
         supervenn(clusters, labels)
         plt.title("Overlap between models")
         plt.tight_layout()
-        plt.savefig('venn_results.png')
+        plt.savefig('/'.join([self.figures, 'super_venn.svg']) format='svg')
         plt.show()
 
     def get_summary_table(self, genes_clusters, models_scores):
@@ -958,8 +962,53 @@ class ProfileAnalysis:
             # plt.ylim([0,50])
             plt.title('Distribution of inflexion points')
             plt.tight_layout()
-            plt.savefig('inflection_distribution_sigmoid.svg', format='svg')
+            plt.savefig('/'.join([self.figures, 'inflection_distribution_sigmoid.svg']), format='svg')
         with open('/'.join([self.output, 'strict_sig_genes_list.txt']), 'w') as f:
             for item in gene_list:
                 f.write("%s\n" % item)
         return gene_list, section_l
+
+    def strict_sig_list_random(self, medians, mad, sigmoid_genes, sig_models, plot_dist=False):
+        dog_allowed = False
+        input_medians = medians.loc[sigmoid_genes.index]
+        j = 0
+        randomized_data = pd.DataFrame(columns=range(0, len(medians.columns)))
+        for i in range(0, 10):
+            for index, row in input_medians.iterrows():
+                randomized_data.loc[j] = row.sample(frac=1).values
+                j=j+1
+        guess_bounds = True
+        results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in randomized_data.groupby(np.arange(len(randomized_data)) // self.cores))
+        sigmoid_genes_rnd = results[0][0]
+        sig_models_rnd = results[0][1]
+        section_l = []
+        gene_list = []
+        x = sym.Symbol('x')
+        x0 = sym.Symbol('x0')
+        y0 = sym.Symbol('y0')
+        c = sym.Symbol('c')
+        k = sym.Symbol('k')
+        f = c / (1 + sym.exp(-k*(x-x0))) + y0
+        f_prime = f.diff(x)
+        f_prime = sym.lambdify([(x, x0, y0, c, k)], f_prime)
+        x = np.linspace(self.x[0], self.x[-1], 2000)
+        for key in list(sigmoid_genes_rnd.index):
+            d_ = []
+            for i in x:
+                d_.append(abs(f_prime(np.insert(sig_models_rnd[key], 0, i))))
+            index_min = np.argmax(d_)
+            section = list(self.sections.keys())[int(round(x[index_min]))-1]
+            if section in ['Transverse colon', 'Descending colon']:
+                gene_list.append(key)
+            section_l.append(section)
+        indexes = np.arange(len(self.sections))
+        #         width = 0.3
+        values = pd.Series(section_l).value_counts().reindex(self.sections)/len(section_l)*100
+        plt.figure(figsize=(10, 10))
+        plt.bar(indexes, values, edgecolor='k', color='grey', linewidth=1.5)
+        plt.xticks(indexes, self.sections, rotation=45, ha='right')
+        plt.ylabel('Relative Frequency (%)')
+        # plt.ylim([0,50])
+        plt.title('Distribution of inflexion points')
+        plt.tight_layout()
+        plt.savefig('/'.join([self.figures, 'inflection_distribution_sigmoid_random.svg']), format='svg')

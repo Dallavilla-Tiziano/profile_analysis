@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Library for the analysis of omics data profiles along an organ sections."""
 import os
+import random
 from math import ceil
 import glob
 import pickle
@@ -97,6 +98,21 @@ class ProfileAnalysis:
             raise ValueError("data_type can only be 'numeric' or 'binary'."
                              "Please check "
                              f"the documentation at {self.github}")
+        try:
+            if config['MISC']['set_seed'] == 'True':
+                self.set_rnd_seed = True
+            elif config['MISC']['set_seed'] == 'False':
+                self.set_rnd_seed = False
+            else:
+                raise ValueError
+            if self.set_rnd_seed is True:
+                self.random_seed = int(config['MISC']['random_seed'])
+                random.seed(self.random_seed)
+            else:
+                self.random_seed = None
+        except ValueError as value_error:
+            raise ValueError("Variable random_seed is not an integer")\
+                from value_error
         self.samples2sections = {}
         self.input_data = os.path.join(self.project_path, 'input_data')
         self.data_raw = os.path.join(self.input_data, 'raw')
@@ -180,6 +196,9 @@ class ProfileAnalysis:
 
         print(f"Index colon name: {self.index_col}")
         print(f"Maximum percentage of 0s to drop a sample: {self.sample_0_t}")
+        print(f"Is random seed set?: {self.set_rnd_seed} ")
+        if self.set_rnd_seed is True:
+            print(f"random seed: {self.random_seed} ")
         print(f"Random distribution area threshold: {self.t_area}")
         print(f"Maximum polynomial degree to test: {self.degree_2_test}")
         print(f"Number of random permutations: {self.rnd_perm_n}")
@@ -509,7 +528,7 @@ class ProfileAnalysis:
             poly_fit_perm_score = pd.DataFrame(index=table.index)
             for i in range(0, self.rnd_perm_n):
                 print(f'permutation number {i} of {self.rnd_perm_n}')
-                results = self.polynomial_fitting(table.sample(frac=1, axis=1), degree, mad.sample(frac=1, axis=1))
+                results = self.polynomial_fitting(table.sample(frac=1, axis=1, random_state=self.random_seed), degree, mad.sample(frac=1, axis=1, random_state=self.random_seed))
                 poly_fit_perm_score = poly_fit_perm_score.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
             poly_rnd_scores.append(poly_fit_perm_score)
         return poly_rnd_scores
@@ -520,7 +539,7 @@ class ProfileAnalysis:
         sig_rand_param = {}
         print(f'Fitting random permutated ({self.rnd_perm_n} times) data with simoid model')
         for i in range(0, self.rnd_perm_n):
-            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1), dog_allowed)
+            results = self.sigmoid_fitting(table.sample(frac=1, axis=1, random_state=self.random_seed), guess_bounds, mad.sample(frac=1, axis=1, random_state=self.random_seed), dog_allowed)
             sig_rand_param[f'sig_p_{i}'] = results[1]
             random_sig_df = random_sig_df.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
         return random_sig_df
@@ -695,7 +714,7 @@ class ProfileAnalysis:
         supervenn(clusters, labels)
         plt.title("Overlap between models")
         plt.tight_layout()
-        plt.savefig('/'.join([self.figures, 'super_venn.svg']) format='svg')
+        plt.savefig('/'.join([self.figures, 'super_venn.svg']), format='svg')
         plt.show()
 
     def get_summary_table(self, genes_clusters, models_scores):
@@ -975,7 +994,7 @@ class ProfileAnalysis:
         randomized_data = pd.DataFrame(columns=range(0, len(medians.columns)))
         for i in range(0, 10):
             for index, row in input_medians.iterrows():
-                randomized_data.loc[j] = row.sample(frac=1).values
+                randomized_data.loc[j] = row.sample(frac=1, random_state=self.random_seed).values
                 j=j+1
         guess_bounds = True
         results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in randomized_data.groupby(np.arange(len(randomized_data)) // self.cores))

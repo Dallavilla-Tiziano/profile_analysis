@@ -1,21 +1,12 @@
 name: pa_env
 dependencies:
 - python
-- os
-- random
-- math
-- glob
-- pickle
 - configparser
-- shutil
-- warnings
-- ast
 - pandas
 - joblib
-- sklearn
+- scikit-learn
 - numpy
 - matplotlib
 - scipy
-- supervenn
 - sympy
 - tqdm

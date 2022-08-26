@@ -1,6 +1,7 @@
 name: pa_env
 dependencies:
 - python
+- jupyter
 - configparser
 - pandas
 - joblib

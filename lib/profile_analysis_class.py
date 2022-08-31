@@ -98,6 +98,12 @@ class ProfileAnalysis:
             raise ValueError("data_type can only be 'numeric' or 'binary'."
                              "Please check "
                              f"the documentation at {self.github}")
+
+        self.medians_nan = config['ANALYSIS_SETTINGS']['medians_nan']
+        if self.medians_nan not in ['drop', 'keep']:
+            raise ValueError("medians_nan can only be 'drop' or 'keep'."
+                             "Please check "
+                             f"the documentation at {self.github}")
         try:
             if config['MISC']['set_seed'] == 'True':
                 self.set_rnd_seed = True
@@ -203,6 +209,7 @@ class ProfileAnalysis:
         print(f"Maximum polynomial degree to test: {self.degree_2_test}")
         print(f"Number of random permutations: {self.rnd_perm_n}")
         print(f"Type of data analysed: {self.data_type}")
+        print(f"Median NaN data: {self.medians_nan}")
 
         print(f"Input data folder: {self.input_data}")
         print(f"Raw data folder: {self.data_raw}")
@@ -294,7 +301,8 @@ class ProfileAnalysis:
                     mad = median_abs_deviation(values)
                     medians_df.loc[index, section] = median
                     mad_df.loc[index, section] = mad
-        medians_df.dropna(inplace=True)
+        if self.medians_nan == 'drop':
+            medians_df.dropna(inplace=True)
         mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 
@@ -330,7 +338,8 @@ class ProfileAnalysis:
                 nocnv=(row[self.samples2sections[section]]==0).sum()
                 frac = cnv/(cnv+nocnv)*100
                 medians_df.loc[index, section] = frac
-        medians_df.dropna(inplace=True)
+        if self.medians_nan == 'drop':
+            medians_df.dropna(inplace=True)
         mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 

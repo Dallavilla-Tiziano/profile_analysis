@@ -343,7 +343,7 @@ class ProfileAnalysis:
         mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 
-    def median_by_section(self, remove_outliers, scale):
+    def median_by_section(self, remove_outliers=False, scale=False):
         """
         Wrapper of (calculate_median_by_section).Calculate gene expression
         median and median absolute deviation (MAD) values for each section.

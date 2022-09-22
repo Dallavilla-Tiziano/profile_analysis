@@ -646,8 +646,8 @@ class ProfileAnalysis:
         for i in range(0, self.degree_2_test):
             plot_list.append(poly_obs_score_lists[i])
             plot_list.append(poly_perm_score_lists[i])
-        plot_list.append(sig_obs_score_lists)
-        plot_list.append(sig_perm_score_lists)
+        plot_list = plot_list+[sig_obs_score_lists]
+        plot_list = plot_list+sig_perm_score_lists
         plt.figure(figsize=(15, 10))
         bplot = plt.boxplot(plot_list, showfliers=False, patch_artist=True, medianprops=medianprops, boxprops=boxprops)
         for patch, color in zip(bplot['boxes'], c):
@@ -776,7 +776,7 @@ class ProfileAnalysis:
                         sigmoid.loc[index] = row
                     else:
                         discarded.loc[index] = row
-                        print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
+                        #print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
                 else:
                     sigmoid.loc[index] = row
         else:
@@ -1001,7 +1001,7 @@ class ProfileAnalysis:
         input_medians = medians.loc[sigmoid_genes.index]
         j = 0
         randomized_data = pd.DataFrame(columns=range(0, len(medians.columns)))
-        for i in range(0, 10):
+        for i in range(0, 5):
             for index, row in input_medians.iterrows():
                 randomized_data.loc[j] = row.sample(frac=1, random_state=self.random_seed).values
                 j=j+1

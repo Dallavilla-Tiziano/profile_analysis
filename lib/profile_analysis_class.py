@@ -752,7 +752,8 @@ class ProfileAnalysis:
             cont = summary[summary['sigmoidal'] == False]
             sig_raw = summary[summary['sigmoidal'] == True]
             discarded = pd.DataFrame(columns=sig_raw.columns)
-            sigmoid = pd.DataFrame(columns=sig_raw.columns)
+            discarded= {}
+            sigmoid = {}
             cont_significant_status = sig_raw.select_dtypes(include='bool')
             cont_score = sig_raw.select_dtypes(include='float')
             cont_score.columns = cont_significant_status.columns
@@ -773,19 +774,26 @@ class ProfileAnalysis:
                     if discard == 1:
                         cont.loc[index] = row
                     elif discard == 0:
-                        sigmoid.loc[index] = row
+                        sigmoid[index] = row
+                        pass
                     else:
-                        discarded.loc[index] = row
-                        #print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
+                        pass
+                        discarded[index] = row
+                        # print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
                 else:
-                    sigmoid.loc[index] = row
+                    pass
+                    sigmoid[index] = row
         else:
             cont = summary
             sigmoid = pd.DataFrame()
             discarded = pd.DataFrame()
 
         cont = cont.select_dtypes(include='float')
+        sigmoid=pd.DataFrame(sigmoid).T
+        sigmoid = sigmoid.astype(cont.dtypes.to_dict())
         sigmoid = sigmoid.select_dtypes(include='float')
+        discarded=pd.DataFrame(discarded).T
+        discarded = discarded.astype(cont.dtypes.to_dict())
         discarded = discarded.select_dtypes(include='float')
         continuos_res = pd.DataFrame()
         sigmoid_res = pd.DataFrame()

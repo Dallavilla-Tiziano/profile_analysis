@@ -423,6 +423,7 @@ class ProfileAnalysis:
         """SIGMOIDAL FITTING FOR EACH ROW OF TABLE."""
         fitting_score = pd.DataFrame(columns=['feature', 'sigmoidal'])
         models = {}
+        i=0
         for index, row in table.iterrows():
             y0_min = row.min()
             y0_max = row.max()
@@ -460,7 +461,8 @@ class ProfileAnalysis:
                 parameters = [-999, -999, -999, -999]
 
             temp = pd.Series([index, score], index=fitting_score.columns)
-            fitting_score = fitting_score.append(temp, ignore_index=True)
+            fitting_score.loc[i]=temp
+            i=i+1
             models[index] = parameters
         fitting_score.set_index('feature', inplace=True)
         return fitting_score, models

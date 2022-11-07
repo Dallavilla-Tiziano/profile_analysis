@@ -113,7 +113,7 @@ class ProfileAnalysis:
                 raise ValueError
             if self.set_rnd_seed is True:
                 self.random_seed = int(config['MISC']['random_seed'])
-                random.seed(self.random_seed)
+                # random.seed(self.random_seed)
             else:
                 self.random_seed = None
         except ValueError as value_error:
@@ -340,7 +340,7 @@ class ProfileAnalysis:
                 medians_df.loc[index, section] = frac
         if self.medians_nan == 'drop':
             medians_df.dropna(inplace=True)
-        mad_df = mad_df.loc[medians_df.index]
+        # mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 
     def median_by_section(self, remove_outliers=False, scale=False):
@@ -539,7 +539,7 @@ class ProfileAnalysis:
             poly_fit_perm_score = pd.DataFrame(index=table.index)
             for i in range(0, self.rnd_perm_n):
                 print(f'permutation number {i} of {self.rnd_perm_n}')
-                results = self.polynomial_fitting(table.sample(frac=1, axis=1, random_state=self.random_seed), degree, mad.sample(frac=1, axis=1, random_state=self.random_seed))
+                results = self.polynomial_fitting(table.sample(frac=1, axis=1, random_state=i), degree, mad.sample(frac=1, axis=1))
                 poly_fit_perm_score = poly_fit_perm_score.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
             poly_rnd_scores.append(poly_fit_perm_score)
         return poly_rnd_scores
@@ -550,12 +550,12 @@ class ProfileAnalysis:
         sig_rand_param = {}
         print(f'Fitting random permutated ({self.rnd_perm_n} times) data with simoid model')
         for i in range(0, self.rnd_perm_n):
-            results = self.sigmoid_fitting(table.sample(frac=1, axis=1, random_state=self.random_seed), guess_bounds, mad.sample(frac=1, axis=1, random_state=self.random_seed), dog_allowed)
+            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1, random_state=i), dog_allowed)
             sig_rand_param[f'sig_p_{i}'] = results[1]
             random_sig_df = random_sig_df.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
         return random_sig_df
 
-    def fit_random_data(self, table, mad, guess_bounds=False, dog_allowed=True):
+    def fit_random_data(self, table, mad, guess_bounds=False, dog_allowed=True, force_new=False):
         """Fit continuum and sigmoid models on random permutation of
         median data.
         Parameters
@@ -569,7 +569,7 @@ class ProfileAnalysis:
         """
         load_results1 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'polynomial_random_fitting.pkl']), pkl=1)
         load_results2 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'sigmoidal_random_fitting.pkl']), pkl=1)
-        if load_results2.empty:
+        if load_results2.empty or force_new:
             poly_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_polynomial_fitting)(group, mad) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             print('done polynomial')
             sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
@@ -626,7 +626,7 @@ class ProfileAnalysis:
         if vline:
             plt.vlines(beta.ppf(self.t_area, a, b, loc, scale), 0, ylim, linestyles='--', color='k', label=f'{self.t_area*100}% threshold')
 
-        threshold = beta.ppf(self.t_area, a, b, loc, scale)
+        # threshold = beta.ppf(self.t_area, a, b, loc, scale)
         t = np.arange(threshold, 1, 0.01)
         plt.fill_between(x=t, y1=beta.pdf(t, a1, b1, loc1, scale1),
             where= (-1 < t)&(t < 1),
@@ -777,13 +777,10 @@ class ProfileAnalysis:
                         cont.loc[index] = row
                     elif discard == 0:
                         sigmoid[index] = row
-                        pass
                     else:
-                        pass
                         discarded[index] = row
                         # print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
                 else:
-                    pass
                     sigmoid[index] = row
         else:
             cont = summary
@@ -792,11 +789,13 @@ class ProfileAnalysis:
 
         cont = cont.select_dtypes(include='float')
         sigmoid=pd.DataFrame(sigmoid).T
-        sigmoid = sigmoid.astype(cont.dtypes.to_dict())
-        sigmoid = sigmoid.select_dtypes(include='float')
+        if not sigmoid.empty:
+            sigmoid = sigmoid.astype(cont.dtypes.to_dict())
+            sigmoid = sigmoid.select_dtypes(include='float')
         discarded=pd.DataFrame(discarded).T
-        discarded = discarded.astype(cont.dtypes.to_dict())
-        discarded = discarded.select_dtypes(include='float')
+        if not discarded.empty:
+            discarded = discarded.astype(cont.dtypes.to_dict())
+            discarded = discarded.select_dtypes(include='float')
         continuos_res = pd.DataFrame()
         sigmoid_res = pd.DataFrame()
         discarded_res = pd.DataFrame()
@@ -1013,8 +1012,8 @@ class ProfileAnalysis:
         randomized_data = pd.DataFrame(columns=range(0, len(medians.columns)))
         for i in range(0, 5):
             for index, row in input_medians.iterrows():
-                randomized_data.loc[j] = row.sample(frac=1, random_state=self.random_seed).values
-                j=j+1
+                randomized_data.loc[j] = row.sample(frac=1, random_state=j).values
+                j = j+1
         guess_bounds = True
         results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in randomized_data.groupby(np.arange(len(randomized_data)) // self.cores))
         sigmoid_genes_rnd = results[0][0]

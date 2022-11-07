@@ -12,3 +12,9 @@ example/output/
 example/random_data_fitting_3/
 
 example/sample_by_section_1/
+
+notebooks/paper_analysis/.ipynb_checkpoints/
+
+lib/__pycache__/
+
+notebooks/example/.ipynb_checkpoints/

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Library for the analysis of omics data profiles along an organ sections."""
 import os
+import sys
 import random
 from math import ceil
 import glob
@@ -112,8 +113,10 @@ class ProfileAnalysis:
             else:
                 raise ValueError
             if self.set_rnd_seed is True:
+                # set random seed and generate random vector of integer for permutations
                 self.random_seed = int(config['MISC']['random_seed'])
-                # random.seed(self.random_seed)
+                random.seed(self.random_seed)
+                self.rnd_ints = [random.randint(0, 2**30) for _ in range(self.rnd_perm_n)]
             else:
                 self.random_seed = None
         except ValueError as value_error:
@@ -427,7 +430,7 @@ class ProfileAnalysis:
         for index, row in table.iterrows():
             y0_min = row.min()
             y0_max = row.max()
-            self.bounds = ([0, -y0_max, -y0_max, -1000], [9, y0_max, y0_max, 1000])
+            self.bounds = ([3, -y0_max-1, -y0_max-1, -1000], [6, y0_max, y0_max, 1000])
             try:
                 if guess_bounds and dog_allowed:
                     parameters, pcov = curve_fit(self.sigmoid_func,
@@ -539,7 +542,7 @@ class ProfileAnalysis:
             poly_fit_perm_score = pd.DataFrame(index=table.index)
             for i in range(0, self.rnd_perm_n):
                 print(f'permutation number {i} of {self.rnd_perm_n}')
-                results = self.polynomial_fitting(table.sample(frac=1, axis=1, random_state=i), degree, mad.sample(frac=1, axis=1))
+                results = self.polynomial_fitting(table.sample(frac=1, axis=1, random_state=self.rnd_ints[i]), degree, mad.sample(frac=1, axis=1))
                 poly_fit_perm_score = poly_fit_perm_score.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
             poly_rnd_scores.append(poly_fit_perm_score)
         return poly_rnd_scores
@@ -550,7 +553,7 @@ class ProfileAnalysis:
         sig_rand_param = {}
         print(f'Fitting random permutated ({self.rnd_perm_n} times) data with simoid model')
         for i in range(0, self.rnd_perm_n):
-            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1, random_state=i), dog_allowed)
+            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1, random_state=self.rnd_ints[i]), dog_allowed)
             sig_rand_param[f'sig_p_{i}'] = results[1]
             random_sig_df = random_sig_df.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
         return random_sig_df
@@ -595,6 +598,7 @@ class ProfileAnalysis:
         return rand_fitting_score_poly, rand_fitting_score_sig
 
     def gof_dist(self, obs_score_list, perm_score_list, degree, dist_obs, dist_perm, pdf_perm, pdf_obs, vline):
+
         a, b, loc, scale = beta.fit(perm_score_list)
         a1, b1, loc1, scale1 = beta.fit(obs_score_list)
 
@@ -602,6 +606,9 @@ class ProfileAnalysis:
         pdf = beta.pdf(x, a, b, loc, scale)
 
         pdf_data = beta.pdf(x, a1, b1, loc1, scale1)
+
+        # t_list = perm_score_list[np.logical_not(np.isnan(perm_score_list))]
+        t = np.quantile(perm_score_list,self.t_area)
 
         threshold = beta.ppf(self.t_area, a, b, loc, scale)
         bins = np.histogram(np.hstack((obs_score_list, perm_score_list)), bins=100)[1]
@@ -624,21 +631,22 @@ class ProfileAnalysis:
             ylim = max_pdf
         plt.ylim(0, ylim)
         if vline:
-            plt.vlines(beta.ppf(self.t_area, a, b, loc, scale), 0, ylim, linestyles='--', color='k', label=f'{self.t_area*100}% threshold')
+            plt.vlines(t, 0, ylim, linestyles='--', color='k', label=f'{self.t_area*100}% threshold')
 
         # threshold = beta.ppf(self.t_area, a, b, loc, scale)
-        t = np.arange(threshold, 1, 0.01)
-        plt.fill_between(x=t, y1=beta.pdf(t, a1, b1, loc1, scale1),
-            where= (-1 < t)&(t < 1),
-            color= "g",
-            alpha= 0.2)
+        # t = np.arange(threshold, 1, 0.01)
+
+        # plt.fill_between(x=t, y1=beta.pdf(t, a1, b1, loc1, scale1),
+        #     where= (-1 < t)&(t < 1),
+        #     color= "g",
+        #     alpha= 0.2)
         plt.legend(loc='upper left')
         plt.ylabel('Density')
         plt.xlabel('R score')
         plt.tight_layout()
         plt.savefig('/'.join([self.figures, f'{degree}.svg']), format="svg")
         plt.show()
-        return threshold
+        return t
 
     def gof_performance(self, poly_obs_score_lists, sig_obs_score_lists, poly_perm_score_lists, sig_perm_score_lists):
         plot_list = []
@@ -1005,16 +1013,15 @@ class ProfileAnalysis:
                 f.write("%s\n" % item)
         return gene_list, section_l
 
-    def strict_sig_list_random(self, medians, mad, sigmoid_genes, sig_models, plot_dist=False):
+    def strict_sig_list_random(self, medians, mad, sigmoid_genes, sig_models, plot_dist=False, guess_bounds=True):
         dog_allowed = False
         input_medians = medians.loc[sigmoid_genes.index]
         j = 0
         randomized_data = pd.DataFrame(columns=range(0, len(medians.columns)))
         for i in range(0, 5):
             for index, row in input_medians.iterrows():
-                randomized_data.loc[j] = row.sample(frac=1, random_state=j).values
+                randomized_data.loc[j] = row.sample(frac=1, random_state=i).values
                 j = j+1
-        guess_bounds = True
         results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in randomized_data.groupby(np.arange(len(randomized_data)) // self.cores))
         sigmoid_genes_rnd = results[0][0]
         sig_models_rnd = results[0][1]

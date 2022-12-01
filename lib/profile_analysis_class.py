@@ -400,7 +400,7 @@ class ProfileAnalysis:
 
         return medians, mad
 
-    def polynomial_fitting(self, table, i, mad):
+    def polynomial_fitting(self, table, i):
         """POLYNOMIAL FITTING FOR EACH ROW OF TABLE."""
         poly_fit_results = pd.DataFrame(index=table.index)
         fitting_score = pd.DataFrame(columns=['feature', i])
@@ -422,42 +422,46 @@ class ProfileAnalysis:
     def sigmoid_func(self, x, x0, y0, c, k):
         return c / (1 + np.exp(-k*(x-x0))) + y0
 
-    def sigmoid_fitting(self, table, guess_bounds, mad, dog_allowed):
+    def sigmoid_fitting(self, table, guess_bounds):
         """SIGMOIDAL FITTING FOR EACH ROW OF TABLE."""
         fitting_score = pd.DataFrame(columns=['feature', 'sigmoidal'])
         models = {}
-        i=0
+        i = 0
         for index, row in table.iterrows():
             y0_min = row.min()
             y0_max = row.max()
-            self.bounds = ([3, -y0_max-1, -y0_max-1, -1000], [6, y0_max, y0_max, 1000])
+            # self.bounds = ([4, 0, 0, -1000], [5, np.inf, np.inf, 1000])
+            self.bounds = ([0, -np.inf, -np.inf, -1000], [9, np.inf, np.inf, 1000])
             try:
-                if guess_bounds and dog_allowed:
+                if guess_bounds:
                     parameters, pcov = curve_fit(self.sigmoid_func,
                                                  self.x,
                                                  row.to_list(),
-                                                 method='dogbox',
-                                                 maxfev=3000,
+                                                 maxfev=2000,
                                                  bounds=self.bounds)
-                elif dog_allowed is False and guess_bounds is False:
-                    parameters, pcov = curve_fit(self.sigmoid_func,
-                                                 self.x,
-                                                 row.to_list(),
-                                                 maxfev=3000)
-                elif dog_allowed is False:
-                    parameters, pcov = curve_fit(self.sigmoid_func,
-                                                 self.x,
-                                                 row.to_list(),
-                                                 bounds=self.bounds,
-                                                 maxfev=3000)
+                    score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
+                                                          parameters[2], parameters[3]))
+                    if score < 0.1:
+                        self.bounds = ([0, -1e9, -1e9, -1000], [9, 1e9, 1e9, 1000])
+                        parameters, pcov = curve_fit(self.sigmoid_func,
+                                                     self.x,
+                                                     row.to_list(),
+                                                     maxfev=2000,
+                                                     bounds=self.bounds,
+                                                     method='dogbox')
                 else:
                     parameters, pcov = curve_fit(self.sigmoid_func,
                                                  self.x,
                                                  row.to_list(),
-                                                 method='dogbox',
-                                                 maxfev=3000)
-                score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
-                                                      parameters[2], parameters[3]))
+                                                 maxfev=2000)
+                    score = r2_score(row.to_list(), self.sigmoid_func(self.x, parameters[0], parameters[1],
+                                                          parameters[2], parameters[3]))
+                    if score < 0.2:
+                        parameters, pcov = curve_fit(self.sigmoid_func,
+                                                     self.x,
+                                                     row.to_list(),
+                                                     maxfev=2000,
+                                                     method='dogbox')
             except (RuntimeError) as e:
                 print('no solution was found!')
                 score = np.nan
@@ -470,7 +474,7 @@ class ProfileAnalysis:
         fitting_score.set_index('feature', inplace=True)
         return fitting_score, models
 
-    def fit_data(self, table, mad, guess_bounds=True, dog_allowed=True):
+    def fit_data(self, table, guess_bounds=True):
         """Fit continuum and sigmoid models on median data.
 
         Parameters
@@ -501,11 +505,11 @@ class ProfileAnalysis:
             poly_models = {}
             sig_models = {}
 
-            results = Parallel(n_jobs=self.cores)(delayed(self.polynomial_fitting)(table, degree, mad) for degree in range(1, self.degree_2_test+1))
+            results = Parallel(n_jobs=self.cores)(delayed(self.polynomial_fitting)(table, degree) for degree in range(1, self.degree_2_test+1))
             for result in results:
                 poly_scores = pd.concat([poly_scores, result[0]], axis=1)
                 poly_models[result[0].columns[0]] = result[1]
-            results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in table.groupby(np.arange(len(table)) // self.cores))
+            results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds) for i, group in table.groupby(np.arange(len(table)) // self.cores))
             for result in results:
                 sigmoid_scores = sigmoid_scores.append(result[0])
                 sig_models.update(result[1])
@@ -534,7 +538,7 @@ class ProfileAnalysis:
         models_scores['sigmoidal'] = sigmoid_scores['sigmoidal']
         return models_scores, poly_scores, sigmoid_scores, poly_models, sig_models
 
-    def random_polynomial_fitting(self, table, mad):
+    def random_polynomial_fitting(self, table):
         """POLYNOMIAL FITTING with RANDOM PERMUTATION."""
         poly_rnd_scores = []
         for degree in range(1, self.degree_2_test+1):
@@ -542,23 +546,23 @@ class ProfileAnalysis:
             poly_fit_perm_score = pd.DataFrame(index=table.index)
             for i in range(0, self.rnd_perm_n):
                 print(f'permutation number {i} of {self.rnd_perm_n}')
-                results = self.polynomial_fitting(table.sample(frac=1, axis=1, random_state=self.rnd_ints[i]), degree, mad.sample(frac=1, axis=1))
+                results = self.polynomial_fitting(table.sample(frac=1, axis=1, random_state=self.rnd_ints[i]), degree)
                 poly_fit_perm_score = poly_fit_perm_score.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
             poly_rnd_scores.append(poly_fit_perm_score)
         return poly_rnd_scores
 
-    def random_sigmoidal_fitting(self, table, guess_bounds, mad, dog_allowed):
+    def random_sigmoidal_fitting(self, table, guess_bounds):
         """SIGMOIDAL FITTING with RANDOM PERMUTATION."""
         random_sig_df = pd.DataFrame(index=table.index)
         sig_rand_param = {}
         print(f'Fitting random permutated ({self.rnd_perm_n} times) data with simoid model')
         for i in range(0, self.rnd_perm_n):
-            results = self.sigmoid_fitting(table.sample(frac=1, axis=1), guess_bounds, mad.sample(frac=1, axis=1, random_state=self.rnd_ints[i]), dog_allowed)
+            results = self.sigmoid_fitting(table.sample(frac=1, axis=1, random_state=self.rnd_ints[i]), guess_bounds)
             sig_rand_param[f'sig_p_{i}'] = results[1]
             random_sig_df = random_sig_df.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
         return random_sig_df
 
-    def fit_random_data(self, table, mad, guess_bounds=False, dog_allowed=True, force_new=False):
+    def fit_random_data(self, table, guess_bounds=False, force_new=False):
         """Fit continuum and sigmoid models on random permutation of
         median data.
         Parameters
@@ -573,9 +577,10 @@ class ProfileAnalysis:
         load_results1 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'polynomial_random_fitting.pkl']), pkl=1)
         load_results2 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'sigmoidal_random_fitting.pkl']), pkl=1)
         if load_results2.empty or force_new:
-            poly_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_polynomial_fitting)(group, mad) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
+            poly_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_polynomial_fitting)(group) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             print('done polynomial')
-            sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
+            sig_models = {}
+            sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             rand_fitting_score_poly = []
             for i in range(0, self.degree_2_test):
                 degree_results = pd.DataFrame()
@@ -585,12 +590,16 @@ class ProfileAnalysis:
             rand_fitting_score_sig = pd.DataFrame()
             for result in sigmoid_random_result:
                 rand_fitting_score_sig = rand_fitting_score_sig.append(result)
+                sig_models.update(result[1])
 
             open_file = open('/'.join([self.rnd_data_fitting, 'polynomial_random_fitting.pkl']), "wb")
             pickle.dump(rand_fitting_score_poly, open_file)
             open_file.close()
             open_file = open('/'.join([self.rnd_data_fitting, 'sigmoidal_random_fitting.pkl']), "wb")
             pickle.dump(rand_fitting_score_sig, open_file)
+            open_file.close()
+            open_file = open('/'.join([self.data_fitting, 'sigmoid_random_models.pkl']), "wb")
+            pickle.dump(sig_models, open_file)
             open_file.close()
         else:
             rand_fitting_score_poly = load_results1
@@ -1022,7 +1031,7 @@ class ProfileAnalysis:
             for index, row in input_medians.iterrows():
                 randomized_data.loc[j] = row.sample(frac=1, random_state=i).values
                 j = j+1
-        results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds, mad, dog_allowed) for i, group in randomized_data.groupby(np.arange(len(randomized_data)) // self.cores))
+        results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds) for i, group in randomized_data.groupby(np.arange(len(randomized_data)) // self.cores))
         sigmoid_genes_rnd = results[0][0]
         sig_models_rnd = results[0][1]
         section_l = []

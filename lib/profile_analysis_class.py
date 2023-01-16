@@ -554,13 +554,14 @@ class ProfileAnalysis:
     def random_sigmoidal_fitting(self, table, guess_bounds):
         """SIGMOIDAL FITTING with RANDOM PERMUTATION."""
         random_sig_df = pd.DataFrame(index=table.index)
-        sig_rand_param = {}
+        sig_rand_param = []
         print(f'Fitting random permutated ({self.rnd_perm_n} times) data with simoid model')
         for i in range(0, self.rnd_perm_n):
             results = self.sigmoid_fitting(table.sample(frac=1, axis=1, random_state=self.rnd_ints[i]), guess_bounds)
-            sig_rand_param[f'sig_p_{i}'] = results[1]
+            for key in results[1].keys():
+                sig_rand_param.append(results[1][key])
             random_sig_df = random_sig_df.merge(results[0], left_index=True, right_index=True, suffixes=(f'_{i-1}', f'_{i}'))
-        return random_sig_df
+        return random_sig_df, sig_rand_param
 
     def fit_random_data(self, table, guess_bounds=False, force_new=False):
         """Fit continuum and sigmoid models on random permutation of
@@ -576,10 +577,10 @@ class ProfileAnalysis:
         """
         load_results1 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'polynomial_random_fitting.pkl']), pkl=1)
         load_results2 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'sigmoidal_random_fitting.pkl']), pkl=1)
+        load_results3 = self.check_step_completion('/'.join([self.rnd_data_fitting, 'sigmoid_random_models.pkl']), pkl=1)
         if load_results2.empty or force_new:
             poly_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_polynomial_fitting)(group) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             print('done polynomial')
-            sig_models = {}
             sigmoid_random_result = Parallel(n_jobs=self.cores)(delayed(self.random_sigmoidal_fitting)(group, guess_bounds) for i, group in tqdm(table.groupby(np.arange(len(table)) // 10)))
             rand_fitting_score_poly = []
             for i in range(0, self.degree_2_test):
@@ -588,9 +589,10 @@ class ProfileAnalysis:
                     degree_results = degree_results.append(result[i])
                 rand_fitting_score_poly.append(degree_results)
             rand_fitting_score_sig = pd.DataFrame()
+            sig_models = []
             for result in sigmoid_random_result:
-                rand_fitting_score_sig = rand_fitting_score_sig.append(result)
-                sig_models.update(result[1])
+                rand_fitting_score_sig = rand_fitting_score_sig.append(result[0])
+                sig_models = sig_models + result[1]
 
             open_file = open('/'.join([self.rnd_data_fitting, 'polynomial_random_fitting.pkl']), "wb")
             pickle.dump(rand_fitting_score_poly, open_file)
@@ -598,13 +600,15 @@ class ProfileAnalysis:
             open_file = open('/'.join([self.rnd_data_fitting, 'sigmoidal_random_fitting.pkl']), "wb")
             pickle.dump(rand_fitting_score_sig, open_file)
             open_file.close()
-            open_file = open('/'.join([self.data_fitting, 'sigmoid_random_models.pkl']), "wb")
+            open_file = open('/'.join([self.rnd_data_fitting, 'sigmoid_random_models.pkl']), "wb")
             pickle.dump(sig_models, open_file)
             open_file.close()
         else:
             rand_fitting_score_poly = load_results1
             rand_fitting_score_sig = load_results2
-        return rand_fitting_score_poly, rand_fitting_score_sig
+            sig_models = load_results3
+
+        return rand_fitting_score_poly, rand_fitting_score_sig, sig_models
 
     def gof_dist(self, obs_score_list, perm_score_list, degree, dist_obs, dist_perm, pdf_perm, pdf_obs, vline):
 
@@ -956,7 +960,7 @@ class ProfileAnalysis:
             os.mkdir(toDirectory)
             self.copytree(fromDirectory, toDirectory)
 
-    def plot_sample_distribution(self, save_as='samples_distribution.svg'):
+    def plot_sample_distribution(self, title='', save_as='sample_distribution.svg'):
         """
         Plot samples distribution in colon sections and save the figure.
         Needs to be executed after create_samples_to_sections_table() or
@@ -981,7 +985,10 @@ class ProfileAnalysis:
         plt.ylabel('Frequency')
         plt.xticks(range(len(samplexsec.keys())), samplexsec.keys(), rotation=45, ha='right')
         plt.tight_layout()
-        plt.title('Samples Distribution')
+        if title:
+            plt.title(title)
+        else:
+            plt.title('Sample Distribution')
         plt.savefig('/'.join([self.figures, f'{save_as}']), format="svg")
 
     def strict_sig_list(self, sigmoid_genes, sig_models, plot_dist = False):

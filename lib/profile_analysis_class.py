@@ -23,6 +23,7 @@ import sympy as sym
 from tqdm import tqdm
 
 
+
 class ProfileAnalysis:
     """Class for the analysis of omics data along an organ sections."""
 
@@ -689,7 +690,7 @@ class ProfileAnalysis:
         plt.savefig('/'.join([self.figures, 'gof_normal_vs_perm.svg']), format='svg', transparent=True)
         plt.show()
 
-    def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores, dist_obs=True, dist_perm=True, pdf_perm=True, pdf_obs=True, vline=True):
+    def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores, dist_obs=False, dist_perm=True, pdf_perm=True, pdf_obs=True, vline=True):
         """
         Plot r score distribution for normal and permutated data for each model analysed
         """
@@ -1072,3 +1073,35 @@ class ProfileAnalysis:
         plt.title('Distribution of inflexion points')
         plt.tight_layout()
         plt.savefig('/'.join([self.figures, 'inflection_distribution_sigmoid_random.svg']), format='svg')
+
+    def random_model_inflexion(self, rnd_sig_models, perm_number=500):
+        section_l = []
+        x = sym.Symbol('x')
+        x0 = sym.Symbol('x0')
+        y0 = sym.Symbol('y0')
+        c = sym.Symbol('c')
+        k = sym.Symbol('k')
+        f = c / (1 + sym.exp(-k*(x-x0))) + y0
+        f_prime = f.diff(x)
+        f_prime = sym.lambdify([(x, x0, y0, c, k)], f_prime)
+        x = np.linspace(self.x[0], self.x[-1], 2000)
+        for element in random.sample(rnd_sig_models, perm_number):
+            if element[1] != -999:
+                d_ = []
+                for i in x:
+                    d_.append(abs(f_prime(np.insert(element, 0, i))))
+                index_min = np.argmax(d_)
+                section = list(self.sections.keys())[int(round(x[index_min]))-1]
+                section_l.append(section)
+        indexes = np.arange(len(self.sections))
+        values = pd.Series(section_l).value_counts().reindex(self.sections)/len(section_l)*100
+        plt.figure(figsize=(10, 10))
+        plt.bar(indexes, values, edgecolor='k', color='grey', linewidth=1.5)
+        plt.xticks(indexes, self.sections, rotation=45, ha='right')
+        plt.ylabel('Relative Frequency (%)')
+        # plt.ylim([0,50])
+        plt.title('Distribution of inflexion points')
+        plt.tight_layout()
+        plt.savefig('/'.join([self.figures,
+                              'inflection_distribution_sigmoid_random.svg']),
+                    format='svg')

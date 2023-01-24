@@ -690,7 +690,7 @@ class ProfileAnalysis:
         plt.savefig('/'.join([self.figures, 'gof_normal_vs_perm.svg']), format='svg', transparent=True)
         plt.show()
 
-    def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores, dist_obs=False, dist_perm=True, pdf_perm=True, pdf_obs=True, vline=True):
+    def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores, dist_obs=True, dist_perm=True, pdf_perm=True, pdf_obs=False, vline=True):
         """
         Plot r score distribution for normal and permutated data for each model analysed
         """

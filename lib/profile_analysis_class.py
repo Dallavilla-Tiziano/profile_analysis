@@ -383,8 +383,10 @@ class ProfileAnalysis:
 
             for res in calc_res:
                 if not res[0].empty:
-                    medians = medians.append(res[0])
-                    mad = mad.append(res[1])
+                    medians = pd.concat([medians, res[0]])
+                    # medians.loc[res[0].index]=res[0]
+                    # mad = mad.append(res[1])
+                    mad = pd.concat([mad, res[1]])
 
             if scale:
                 for index, row in medians.iterrows():

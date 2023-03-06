@@ -901,6 +901,7 @@ class ProfileAnalysis:
         h = 0
         l = 0
         plt.figure(figsize=(20, 10*vertical))
+        mad.set_index('Unnamed: 0', inplace=True)
         for key in gene_indexes_list:
             x = np.linspace(self.x[0], self.x[-1], 1000)
             axs = plt.subplot2grid((vertical, 2), (h, l))

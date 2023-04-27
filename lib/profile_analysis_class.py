@@ -21,6 +21,7 @@ from scipy.optimize import curve_fit
 from supervenn import supervenn
 import sympy as sym
 from tqdm import tqdm
+import mygene
 
 
 
@@ -49,11 +50,12 @@ class ProfileAnalysis:
         if os.path.isfile(self.settings_path):
             self.load_configuration()
             self.create_project()
-            print(f'Project has been created!')
+            print('Project has been created!')
         else:
             raise FileNotFoundError("SETTINGS.ini could not be found, the "
                                     "project can't be created. Please check "
                                     f"the documentation at {self.github}")
+        mg = mygene.MyGeneInfo()
 
     def load_configuration(self):
         """Read settings from SETTINGS.ini."""

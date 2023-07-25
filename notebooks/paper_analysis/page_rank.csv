@@ -1,0 +1,230 @@
+,stat,p-value,nodes_n,q-value,pathway_name
+R-HSA-2559582,2.5,0.3085375387259869,114.0,0.9678780324417944,Senescence-Associated Secretory Phenotype (SASP)
+R-HSA-2046106,31.0,0.4519168485391179,60.0,1.0,alpha-linolenic acid (ALA) metabolism
+R-HSA-1483206,574.5,0.02822818872746104,343.0,0.649798006429688,Glycerophospholipid biosynthesis
+R-HSA-1630316,161.5,0.0039344286264190904,218.0,0.4504920777249859,Glycosaminoglycan metabolism
+R-HSA-4086398,0.0,0.9589844530405307,126.0,1.0,Ca2+ pathway
+R-HSA-8963743,34.0,1.0,76.0,1.0,Digestion and absorption
+R-HSA-2046104,47.5,0.28821079670031147,78.0,0.9565256875995845,alpha-linolenic (omega3) and linoleic (omega6) acid metabolism
+R-HSA-112316,33.0,0.8217920517737067,710.0,1.0,Neuronal System
+R-HSA-156581,33.0,0.10015125333524894,80.0,0.649798006429688,Methylation
+R-HSA-8856825,5.0,0.8975530530918107,146.0,1.0,Cargo recognition for clathrin-mediated endocytosis
+R-HSA-199220,7.5,1.0,34.0,1.0,Vitamin B5 (pantothenate) metabolism
+R-HSA-2173782,28.0,0.6785825867545979,171.0,1.0,Binding and Uptake of Ligands by Scavenger Receptors
+R-HSA-5683057,5.0,0.8663712534228061,802.0,1.0,MAPK family signaling cascades
+R-HSA-427359,0.5,0.9430768509966709,43.0,1.0,SIRT1 negatively regulates rRNA expression
+R-HSA-5675482,4.0,0.3835484342051386,84.0,1.0,Regulation of necroptotic cell death
+R-HSA-3108232,3.0,0.6195466364624429,369.0,1.0,SUMO E3 ligases SUMOylate target proteins
+R-HSA-425393,3.0,1.0,11.0,1.0,Transport of inorganic cations/anions and amino acids/oligopeptides
+R-HSA-392499,1687.5,0.0860875562464068,2831.0,0.649798006429688,Metabolism of proteins
+R-HSA-917937,0.5,0.9506496960739249,92.0,1.0,Iron uptake and transport
+R-HSA-9006931,39.5,0.963484403249288,710.0,1.0,Signaling by Nuclear Receptors
+R-HSA-15869,2851.0,0.23817872646983712,419.0,0.9251602075981515,Metabolism of nucleotides
+R-HSA-4085001,36.0,0.5990973651769372,55.0,1.0,Sialic acid metabolism
+R-HSA-9772573,14.0,0.6380421108841167,116.0,1.0,Late SARS-CoV-2 Infection Events
+R-HSA-2262752,151.5,0.6238556980230713,1504.0,1.0,Cellular responses to stress
+R-HSA-453274,0.5,0.9450736124870437,329.0,1.0,Mitotic G2-G2/M phases
+R-HSA-556833,10318.5,0.10047506957050517,2394.0,0.649798006429688,Metabolism of lipids
+R-HSA-9694516,49.5,0.09007245456181562,221.0,0.649798006429688,SARS-CoV-2 Infection
+R-HSA-73776,6.5,0.30020092404848425,81.0,0.9678780324417944,RNA Polymerase II Promoter Escape
+R-HSA-446219,158.0,0.06401529591782786,146.0,0.649798006429688,Synthesis of substrates in N-glycan biosythesis
+R-HSA-3000480,15.0,0.733342679808511,60.0,1.0,Scavenging by Class A Receptors
+R-HSA-5173214,0.5,1.0,6.0,1.0,O-glycosylation of TSR domain-containing proteins
+R-HSA-163200,15.0,0.19222408431565463,196.0,0.8151725057089798,"Respiratory electron transport, ATP synthesis by chemiosmotic coupling, and heat production by uncoupling proteins."
+R-HSA-9710421,7.5,0.05440471502027284,39.0,0.649798006429688,Defective pyroptosis
+R-HSA-68875,13.5,0.15010824013999446,210.0,0.725145354198376,Mitotic Prophase
+R-HSA-8868773,7.0,0.7076909922776357,198.0,1.0,rRNA processing in the nucleus and cytosol
+R-HSA-112315,30.0,0.8423301406396733,588.0,1.0,Transmission across Chemical Synapses
+R-HSA-168256,224.5,0.18718412394878914,4826.0,0.8151725057089798,Immune System
+R-HSA-388396,343.0,0.3149755509150353,1076.0,0.9730238827038107,GPCR downstream signalling
+R-HSA-416476,50.5,0.8466677253323538,343.0,1.0,G alpha (q) signalling events
+R-HSA-9006925,8.5,0.9154596092977962,734.0,1.0,Intracellular signaling by second messengers
+R-HSA-3214858,2.5,0.3085375387259869,78.0,0.9678780324417944,RMTs methylate histone arginines
+R-HSA-2408508,44.0,0.32765329132286103,47.0,0.9872711014859892,"Metabolism of ingested SeMet, Sec, MeSec into H2Se"
+R-HSA-168249,166.5,0.33363209982136516,2031.0,0.9922305306375665,Innate Immune System
+R-HSA-71291,2462.0,0.14624554283625946,906.0,0.725145354198376,Metabolism of amino acids and derivatives
+R-HSA-201722,0.5,0.9331927987311419,74.0,1.0,Formation of the beta-catenin:TCF transactivating complex
+R-HSA-3858494,0.0,0.9588947190185878,222.0,1.0,Beta-catenin independent WNT signaling
+R-HSA-2299718,6.5,0.28740960991134556,60.0,0.9565256875995845,Condensation of Prophase Chromosomes
+R-HSA-1474244,9.0,0.8078515404763871,767.0,1.0,Extracellular matrix organization
+R-HSA-196741,12.5,0.5738281288043615,94.0,1.0,"Cobalamin (Cbl, vitamin B12) transport and metabolism"
+R-HSA-212436,43.5,0.45401091900425566,2326.0,1.0,Generic Transcription Pathway
+R-HSA-5668914,396.0,0.11791225412777467,578.0,0.649798006429688,Diseases of metabolism
+R-HSA-1500620,7.5,0.12065872159191898,120.0,0.649798006429688,Meiosis
+R-HSA-1912399,0.5,0.9331927987311419,11.0,1.0,Pre-NOTCH Processing in the Endoplasmic Reticulum
+R-HSA-983168,4.0,0.2669147108720698,73.0,0.9261131634803634,Antigen processing: Ubiquitination & Proteasome degradation
+R-HSA-983231,6.0,0.6399134939502488,135.0,1.0,Factors involved in megakaryocyte development and platelet production
+R-HSA-3781860,11.0,1.0,68.0,1.0,Diseases associated with N-glycosylation of proteins
+R-HSA-2454202,8.0,0.6821799955421347,280.0,1.0,Fc epsilon receptor (FCERI) signaling
+R-HSA-9033658,38.5,0.0888916963873293,58.0,0.649798006429688,Blood group systems biosynthesis
+R-HSA-71387,617.0,0.4219706220654639,695.0,1.0,Metabolism of carbohydrates
+R-HSA-8956321,167.5,0.894679544295478,83.0,1.0,Nucleotide salvage
+R-HSA-73614,23.5,0.921641291469152,40.0,1.0,Pyrimidine salvage
+R-HSA-9663891,1.0,1.0,131.0,1.0,Selective autophagy
+R-HSA-166520,1.0,0.9231048130394576,433.0,1.0,Signaling by NTRKs
+R-HSA-9037629,28.5,0.14022078043477887,42.0,0.7135679715458747,Lewis blood group biosynthesis
+R-HSA-1912422,11.5,0.6816308058809071,173.0,1.0,Pre-NOTCH Expression and Processing
+R-HSA-72312,7.0,0.7076909922776357,210.0,1.0,rRNA processing
+R-HSA-9683701,21.5,0.04923964244432532,55.0,0.649798006429688,Translation of Structural Proteins
+R-HSA-9660821,28.0,0.1809490449101142,232.0,0.8151725057089798,ADORA2B mediated anti-inflammatory cytokines production
+R-HSA-418346,7.0,0.6828992247787822,104.0,1.0,Platelet homeostasis
+R-HSA-156580,547.0,0.001837785000664458,275.0,0.4208527651521609,Phase II - Conjugation of compounds
+R-HSA-163125,10.0,0.9044910326513067,56.0,1.0,Post-translational modification: synthesis of GPI-anchored proteins
+R-HSA-947581,12.5,0.24862165303061412,42.0,0.9251602075981515,Molybdenum cofactor biosynthesis
+R-HSA-429958,11.0,0.3550430562357342,36.0,1.0,mRNA decay by 3' to 5' exoribonuclease
+R-HSA-2408557,10.0,0.37951659957365913,127.0,1.0,Selenocysteine synthesis
+R-HSA-9612973,0.5,0.9438992391578747,310.0,1.0,Autophagy
+R-HSA-372790,378.5,0.41850068051240263,1161.0,1.0,Signaling by GPCR
+R-HSA-72764,2.5,0.8101394953356473,126.0,1.0,Eukaryotic Translation Termination
+R-HSA-5218859,14.0,0.0229277621895448,107.0,0.649798006429688,Regulated Necrosis
+R-HSA-1638074,33.5,0.034361520579153225,46.0,0.649798006429688,Keratan sulfate/keratin metabolism
+R-HSA-8957322,629.0,0.9378342096526345,546.0,1.0,Metabolism of steroids
+R-HSA-112043,6.0,0.6959650290120472,89.0,1.0,PLC beta mediated events
+R-HSA-157118,11.5,0.681939114271704,430.0,1.0,Signaling by NOTCH
+R-HSA-1483191,24.0,0.43760434288430705,79.0,1.0,Synthesis of PC
+R-HSA-211859,1971.0,0.23190134741038182,722.0,0.9251602075981515,Biological oxidations
+R-HSA-5654741,4.0,1.0,116.0,1.0,Signaling by FGFR3
+R-HSA-3906995,2.5,0.7928919108787373,30.0,1.0,Diseases associated with O-glycosylation of proteins
+R-HSA-8953854,450.0,0.05113683508770868,1103.0,0.649798006429688,Metabolism of RNA
+R-HSA-4420097,1.0,0.9470120167454327,309.0,1.0,VEGFA-VEGFR2 Pathway
+R-HSA-73894,66.5,0.8547140447181458,1060.0,1.0,DNA Repair
+R-HSA-5334118,2.5,0.31867594411696853,39.0,0.9730238827038107,DNA methylation
+R-HSA-4839726,14.5,0.07803463171582177,346.0,0.649798006429688,Chromatin organization
+R-HSA-5693532,3.5,0.894218156648348,521.0,1.0,DNA Double-Strand Break Repair
+R-HSA-71240,46.0,0.1105483245610453,47.0,0.649798006429688,Tryptophan catabolism
+R-HSA-9648002,5.5,0.7621935559189452,68.0,1.0,RAS processing
+R-HSA-1834949,6.5,1.0,119.0,1.0,Cytosolic sensors of pathogen-associated DNA 
+R-HSA-1445148,0.0,0.9999999999999998,113.0,1.0,Translocation of SLC2A4 (GLUT4) to the plasma membrane
+R-HSA-2408522,142.0,0.19096452843088818,210.0,0.8151725057089798,Selenoamino acid metabolism
+R-HSA-9680350,3.5,0.7068161426658945,101.0,1.0,Signaling by CSF1 (M-CSF) in myeloid cells
+R-HSA-1266738,20.0,0.48207816029850104,1987.0,1.0,Developmental Biology
+R-HSA-8878171,5.5,0.1519955327577382,422.0,0.725145354198376,Transcriptional regulation by RUNX1
+R-HSA-390918,32.0,0.4416175337589192,126.0,1.0,Peroxisomal lipid metabolism
+R-HSA-9748784,86.5,0.7240422589174852,177.0,1.0,Drug ADME
+R-HSA-1169410,2.5,1.0,104.0,1.0,Antiviral mechanism by IFN-stimulated genes
+R-HSA-9711123,19.5,1.0,249.0,1.0,Cellular response to chemical stress
+R-HSA-1643685,3086.0,0.0954564758368604,5066.0,0.649798006429688,Disease
+R-HSA-2022854,6.5,0.5,27.0,1.0,Keratan sulfate biosynthesis
+R-HSA-68886,25.5,0.09356030282413863,646.0,0.649798006429688,M Phase
+R-HSA-76042,6.0,0.6358894883348886,102.0,1.0,RNA Polymerase II Transcription Initiation And Promoter Clearance
+R-HSA-418555,47.5,0.2608288806903559,237.0,0.9251602075981515,G alpha (s) signalling events
+R-HSA-1257604,1.5,0.9227366292172355,667.0,1.0,PIP3 activates AKT signaling
+R-HSA-392154,2.0,0.899378689521138,42.0,1.0,Nitric oxide stimulates guanylate cyclase
+R-HSA-73887,2.0,0.8567889886110707,266.0,1.0,Death Receptor Signaling
+R-HSA-1660662,66.0,0.2405838827623345,103.0,0.9251602075981515,Glycosphingolipid metabolism
+R-HSA-195721,17.5,0.7262735365081198,504.0,1.0,Signaling by WNT
+R-HSA-196854,281.5,0.7059787933705504,578.0,1.0,Metabolism of vitamins and cofactors
+R-HSA-2559583,8.5,0.10939075259509218,308.0,0.649798006429688,Cellular Senescence
+R-HSA-5653656,75.0,0.9855741843398782,1373.0,1.0,Vesicle-mediated transport
+R-HSA-5607764,8.0,1.0,161.0,1.0,CLEC7A (Dectin-1) signaling
+R-HSA-9694635,28.5,0.25613283215575716,69.0,0.9251602075981515,Translation of Structural Proteins
+R-HSA-2559580,2.5,0.7115004188756296,135.0,1.0,Oxidative Stress Induced Senescence
+R-HSA-5213460,6.0,0.0693203169066093,82.0,0.649798006429688,RIPK1-mediated regulated necrosis
+R-HSA-192105,178.5,0.4745957820385423,153.0,1.0,Synthesis of bile acids and bile salts
+R-HSA-1640170,48.5,0.1119180311107395,1741.0,0.649798006429688,Cell Cycle
+R-HSA-912446,4.5,0.18642896819759158,61.0,0.8151725057089798,Meiotic recombination
+R-HSA-1169408,1.0,1.0,82.0,1.0,ISG15 antiviral mechanism
+R-HSA-112040,6.0,0.6959650290120472,108.0,1.0,G-protein mediated events
+R-HSA-5357801,22.0,0.017663421888562014,334.0,0.649798006429688,Programmed Cell Death
+R-HSA-983169,25.5,0.09271094735297986,237.0,0.649798006429688,Class I MHC mediated antigen processing & presentation
+R-HSA-212165,20.5,0.06626235398343809,235.0,0.649798006429688,Epigenetic regulation of gene expression
+R-HSA-1614635,188.0,0.036857305476025996,156.0,0.649798006429688,Sulfur amino acid metabolism
+R-HSA-8953897,165.5,0.5436031505687835,1578.0,1.0,Cellular responses to stimuli
+R-HSA-5250913,3.5,0.3815123002764975,82.0,1.0,Positive epigenetic regulation of rRNA expression
+R-HSA-948021,58.0,0.42633945627335024,332.0,1.0,Transport to the Golgi and subsequent modification
+R-HSA-194138,1.0,0.947033599434931,332.0,1.0,Signaling by VEGF
+R-HSA-9662851,32.0,0.6759532770053253,348.0,1.0,Anti-inflammatory response favouring Leishmania parasite infection
+R-HSA-9709957,24.5,0.900240000012268,364.0,1.0,Sensory Perception
+R-HSA-9679506,68.0,0.059933754164695374,498.0,0.649798006429688,SARS-CoV Infections
+R-HSA-389599,13.0,0.4722483577303954,40.0,1.0,Alpha-oxidation of phytanate
+R-HSA-1483257,731.0,0.037789171093880115,563.0,0.649798006429688,Phospholipid metabolism
+R-HSA-193704,4.0,1.0,141.0,1.0,p75 NTR receptor-mediated signalling
+R-HSA-975576,29.0,0.6858481006409323,67.0,1.0,N-glycan antennae elongation in the medial/trans-Golgi
+R-HSA-1912420,2.5,0.7231915040171097,19.0,1.0,Pre-NOTCH Processing in Golgi
+R-HSA-194068,247.5,0.8960920515348049,186.0,1.0,Bile acid and bile salt metabolism
+R-HSA-429914,23.0,0.05253601128148486,76.0,0.649798006429688,Deadenylation-dependent mRNA decay
+R-HSA-193368,81.5,0.6287994976238567,96.0,1.0,Synthesis of bile acids and bile salts via 7alpha-hydroxycholesterol
+R-HSA-416482,0.5,0.9213503964748575,68.0,1.0,G alpha (12/13) signalling events
+R-HSA-5633007,7.5,0.2626000589252395,373.0,0.9251602075981515,Regulation of TP53 Activity
+R-HSA-913531,3.0,0.625,247.0,1.0,Interferon Signaling
+R-HSA-69278,41.5,0.07149208918971742,1331.0,0.649798006429688,"Cell Cycle, Mitotic"
+R-HSA-112311,5.0,0.8205799264726676,35.0,1.0,Neurotransmitter clearance
+R-HSA-975577,4.0,0.5,19.0,1.0,N-Glycan antennae elongation
+R-HSA-190236,5.0,1.0,341.0,1.0,Signaling by FGFR
+R-HSA-112310,11.0,0.6631160590775915,71.0,1.0,Neurotransmitter release cycle
+R-HSA-425397,1.5,1.0,20.0,1.0,"Transport of vitamins, nucleosides, and related molecules"
+R-HSA-425366,0.5,1.0,16.0,1.0,"Transport of bile salts and organic acids, metal ions and amine compounds"
+R-HSA-9658195,91.0,0.6052691971859443,535.0,1.0,Leishmania infection
+R-HSA-446203,414.0,0.011692898037238147,590.0,0.649798006429688,Asparagine N-linked glycosylation
+R-HSA-8978868,944.0,0.12201447282304184,636.0,0.649798006429688,Fatty acid metabolism
+R-HSA-6790901,6.5,1.0,70.0,1.0,rRNA modification in the nucleus and cytosol
+R-HSA-8936459,0.5,1.0,104.0,1.0,RUNX1 regulates genes involved in megakaryocyte differentiation and platelet function
+R-HSA-3247509,14.5,0.07555669672937405,346.0,0.649798006429688,Chromatin modifying enzymes
+R-HSA-162582,1251.0,0.852785574108013,7202.0,1.0,Signal Transduction
+R-HSA-199991,12.0,0.9945024913922365,1210.0,1.0,Membrane Trafficking
+R-HSA-1483249,30.0,0.7173937342254839,180.0,1.0,Inositol phosphate metabolism
+R-HSA-597592,860.5,0.3661093706194033,1968.0,1.0,Post-translational protein modification
+R-HSA-422356,8.0,0.6962695320046124,136.0,1.0,Regulation of insulin secretion
+R-HSA-9678108,45.0,0.1279848845049601,210.0,0.666103148900815,SARS-CoV-1 Infection
+R-HSA-1632852,4.0,1.0,282.0,1.0,Macroautophagy
+R-HSA-74160,143.0,0.44864078298851295,3084.0,1.0,Gene expression (Transcription)
+R-HSA-9683673,3.5,0.5,12.0,1.0,Maturation of protein 3a
+R-HSA-9645723,11.5,0.016503128830616255,114.0,0.649798006429688,Diseases of programmed cell death
+R-HSA-1428517,91.0,0.25211005709369977,332.0,0.9251602075981515,The citric acid (TCA) cycle and respiratory electron transport
+R-HSA-76009,0.5,0.9430768509966709,124.0,1.0,Platelet Aggregation (Plug Formation)
+R-HSA-913709,12.5,0.0872471227316769,53.0,0.649798006429688,O-linked glycosylation of mucins
+R-HSA-6782315,112.5,0.6664979714491119,151.0,1.0,tRNA modification in the nucleus and cytosol
+R-HSA-5684996,5.0,0.8664154892955284,688.0,1.0,MAPK1/MAPK3 signaling
+R-HSA-73857,120.0,0.34347236095276096,2652.0,1.0,RNA Polymerase II Transcription
+R-HSA-72766,134.5,0.05115781361521072,509.0,0.649798006429688,Translation
+R-HSA-109582,35.0,0.9787368886932214,990.0,1.0,Hemostasis
+R-HSA-8951664,1.0,1.0,214.0,1.0,Neddylation
+R-HSA-3700989,29.5,0.08583256328791561,897.0,0.649798006429688,Transcriptional Regulation by TP53
+R-HSA-427389,0.5,0.9213503964748574,37.0,1.0,ERCC6 (CSB) and EHMT2 (G9a) positively regulate rRNA expression
+R-HSA-975578,9.0,0.8981048109852083,47.0,1.0,Reactions specific to the complex N-glycan synthesis pathway
+R-HSA-8939211,17.0,0.8440246431116489,438.0,1.0,ESR-mediated signaling
+R-HSA-187037,0.0,0.9596997770669203,307.0,1.0,Signaling by NTRK1 (TRKA)
+R-HSA-209776,29.5,0.5599920643342899,63.0,1.0,Metabolism of amine-derived hormones
+R-HSA-428157,157.0,0.2097721086223167,204.0,0.873414779536555,Sphingolipid metabolism
+R-HSA-211000,3.0,1.0,176.0,1.0,Gene Silencing by RNA
+R-HSA-9694719,3.5,0.5,11.0,1.0,Maturation of protein 3a
+R-HSA-3781865,54.5,0.4205571862033193,208.0,1.0,Diseases of glycosylation
+R-HSA-373076,154.0,0.6739147457611099,583.0,1.0,Class A/1 (Rhodopsin-like receptors)
+R-HSA-427413,2.5,0.5,80.0,1.0,NoRC negatively regulates rRNA expression
+R-HSA-5673001,5.0,0.8663712534228061,661.0,1.0,RAF/MAP kinase cascade
+R-HSA-1280215,11.0,0.34563136181508114,2126.0,1.0,Cytokine Signaling in Immune system
+R-HSA-382551,86.5,0.9707811421695187,631.0,1.0,Transport of small molecules
+R-HSA-5250941,5.5,0.24982112882617807,104.0,0.9251602075981515,Negative epigenetic regulation of rRNA expression
+R-HSA-418594,84.5,0.6863628779450058,480.0,1.0,G alpha (i) signalling events
+R-HSA-8878166,1.0,0.9070616338170621,204.0,1.0,Transcriptional regulation by RUNX2
+R-HSA-5173105,40.0,0.02129884044587192,85.0,0.649798006429688,O-linked glycosylation
+R-HSA-1430728,60242.5,0.6399533590255009,6052.0,1.0,Metabolism
+R-HSA-196849,166.0,0.8493833214570167,398.0,1.0,Metabolism of water-soluble vitamins and cofactors
+R-HSA-1474165,8.5,0.11009999095329437,148.0,0.649798006429688,Reproduction
+R-HSA-76002,7.5,0.9367785450435309,378.0,1.0,"Platelet activation, signaling and aggregation"
+R-HSA-500792,175.0,0.7125020572120994,725.0,1.0,GPCR ligand binding
+R-HSA-212300,0.5,1.0,48.0,1.0,PRC2 methylates histones and DNA
+R-HSA-611105,10.0,0.2807161868472989,160.0,0.9565256875995845,Respiratory electron transport
+R-HSA-5218921,5.0,1.0,49.0,1.0,VEGFR2 mediated cell proliferation
+R-HSA-69275,0.5,0.9453865357084615,324.0,1.0,G2/M Transition
+R-HSA-8978934,23.5,0.4849697114234398,106.0,1.0,Metabolism of cofactors
+R-HSA-163685,11.5,0.667371338732573,213.0,1.0,Integration of energy metabolism
+R-HSA-8939236,2.5,0.3085375387259869,63.0,0.9678780324417944,RUNX1 regulates transcription of genes involved in differentiation of HSCs
+R-HSA-77289,20.5,0.7590039133862032,155.0,1.0,Mitochondrial Fatty Acid Beta-Oxidation
+R-HSA-2990846,9.5,0.37999076357886397,391.0,1.0,SUMOylation
+R-HSA-425407,14.0,1.0,50.0,1.0,SLC-mediated transmembrane transport
+R-HSA-5663205,641.0,0.15571222361105774,2334.0,0.7277163103455556,Infectious disease
+R-HSA-111885,12.0,0.4017697081304229,157.0,1.0,Opioid Signalling
+R-HSA-9664433,32.0,0.6759532770053253,349.0,1.0,Leishmania parasite growth and survival
+R-HSA-418597,11.0,0.012980025598278289,68.0,0.649798006429688,G alpha (z) signalling events
+R-HSA-72306,141.0,0.649846188513726,220.0,1.0,tRNA processing
+R-HSA-977068,0.5,1.0,16.0,1.0,Termination of O-glycan biosynthesis
+R-HSA-1280218,41.0,0.11924165211939158,1180.0,0.649798006429688,Adaptive Immune System
+R-HSA-201681,2.5,0.8308241392188904,241.0,1.0,TCF dependent signaling in response to WNT
+R-HSA-163841,15.0,0.8857985238550211,106.0,1.0,"Gamma carboxylation, hypusine formation and arylsulfatase activation"
+R-HSA-5621481,11.5,1.0,257.0,1.0,C-type lectin receptors (CLRs)
+R-HSA-9006934,42.0,0.9552619125812023,2145.0,1.0,Signaling by Receptor Tyrosine Kinases
+R-HSA-446193,202.0,0.030762361906195648,184.0,0.649798006429688,"Biosynthesis of the N-glycan precursor (dolichol lipid-linked oligosaccharide, LLO) and transfer to a nascent protein"
+R-HSA-5579029,85.0,0.2261751457490776,133.0,0.9248947924381924,Metabolic disorders of biological oxidation enzymes
+R-HSA-8856828,3.0,0.9922343064249507,251.0,1.0,Clathrin-mediated endocytosis
+R-HSA-9009391,13.0,0.8785641757621212,135.0,1.0,Extra-nuclear estrogen signaling

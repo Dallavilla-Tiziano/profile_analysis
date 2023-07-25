@@ -1,0 +1,14 @@
+,pathway_id,pathway_name,metabolite,genes_uniprot,genes_symbol,q_value
+0,R-HSA-4085001,Sialic acid metabolism,CHEBI:16556,"['Q9UNP4', 'P15907']",,0.15725949466409425
+1,R-HSA-392499,Metabolism of proteins,CHEBI:16556,"['Q9UNP4', 'P15907']",,0.15725949466409425
+2,R-HSA-392499,Metabolism of proteins,CHEBI:16680,['Q8IXQ9'],,0.15725949466409425
+3,R-HSA-392499,Metabolism of proteins,CHEBI:4208,['Q9BV94'],,0.15725949466409425
+4,R-HSA-168256,Immune System,CHEBI:16027,"['Q9P2N7', 'P05161', 'Q8N461']",,0.0022773530084962967
+5,R-HSA-1630316,Glycosaminoglycan metabolism,CHEBI:16264,['P51654'],,0.009730424412125016
+6,R-HSA-1630316,Glycosaminoglycan metabolism,CHEBI:17659,['P51654'],,0.009730424412125016
+7,R-HSA-1638091,Heparan sulfate/heparin (HS-GAG) metabolism,CHEBI:16264,['P51654'],,0.06155613477240163
+8,R-HSA-1638091,Heparan sulfate/heparin (HS-GAG) metabolism,CHEBI:17659,['P51654'],,0.06155613477240163
+9,R-HSA-446203,Asparagine N-linked glycosylation,CHEBI:16556,"['Q9UNP4', 'P15907']",,0.004785485253453625
+10,R-HSA-446203,Asparagine N-linked glycosylation,CHEBI:4208,['Q9BV94'],,0.004785485253453625
+11,R-HSA-71387,Metabolism of carbohydrates,CHEBI:16264,['P51654'],,0.10968245683559587
+12,R-HSA-71387,Metabolism of carbohydrates,CHEBI:17659,"['O15488', 'P51654']",,0.10968245683559587

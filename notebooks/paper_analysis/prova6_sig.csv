@@ -1,0 +1,4 @@
+,pathway_id,pathway_name,metabolite,genes_uniprot,genes_symbol,q_value
+0,R-HSA-8953854,Metabolism of RNA,CHEBI:16027,"['Q9Y224', 'Q9BVC5']",,0.015372535818839683
+1,R-HSA-72306,tRNA processing,CHEBI:16027,"['Q9Y224', 'Q9BVC5']",,0.015372535818839683
+2,R-HSA-72306,tRNA processing,CHEBI:16680,['Q8TBZ6'],,0.015372535818839683

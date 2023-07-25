@@ -1,0 +1,28 @@
+,Unnamed: 0,pathway_id,pathway_name,metabolite,genes_uniprot,genes_symbol,q_value
+0,0,R-HSA-597592,Post-translational protein modification,CHEBI:16027,['Q9UBE0'],,0.130994060731456
+1,1,R-HSA-597592,Post-translational protein modification,CHEBI:16556,"['Q02505', 'Q8N307', 'P61647', 'Q6W4X9', 'Q9UKN1', 'Q16842', 'Q11206', 'Q11201', 'Q9UJ37']",,0.130994060731456
+2,2,R-HSA-597592,Post-translational protein modification,CHEBI:4208,"['Q9BV94', 'O60476', 'Q92611']",,0.130994060731456
+3,3,R-HSA-597592,Post-translational protein modification,CHEBI:16680,"['Q96G04', 'Q8IXQ9']",,0.130994060731456
+4,4,R-HSA-597592,Post-translational protein modification,CHEBI:17659,"['Q8N3Y3', 'Q9UKP4', 'Q8TE56', 'Q8NFL0', 'O94777', 'Q8N428', 'Q9Y2A9', 'Q86SF2', 'Q02742', 'Q8TE58', 'Q7Z7M8', 'Q10472', 'Q9Y673', 'Q8N307', 'Q9BYG0', 'Q6W4X9', 'Q9UKN1', 'P82987', 'Q02505', 'Q9P283', 'Q6UX72']",,0.130994060731456
+5,5,R-HSA-597592,Post-translational protein modification,CHEBI:16264,"['O94777', 'Q9Y2A9', 'Q02505', 'Q8N307', 'Q9BYG0', 'Q6W4X9', 'Q6UX72', 'Q8NFL0', 'Q9UKN1', 'Q7Z7M8', 'Q02742']",,0.130994060731456
+7,7,R-HSA-1630316,Glycosaminoglycan metabolism,CHEBI:16556,"['P20774', 'Q16842', 'Q11206', 'Q11201']",,0.111160586948943
+8,8,R-HSA-1630316,Glycosaminoglycan metabolism,CHEBI:17659,"['O60512', 'P78333', 'Q9Y2A9', 'Q8NFL0', 'P20774']",,0.111160586948943
+9,9,R-HSA-1630316,Glycosaminoglycan metabolism,CHEBI:16264,"['Q8NFL0', 'P78333', 'Q9Y2A9', 'P20774']",,0.111160586948943
+10,10,R-HSA-72306,tRNA processing,CHEBI:16027,"['Q14657', 'Q8IWT0', 'Q96S44', 'Q52LJ0']",,0.0583563822659793
+11,11,R-HSA-72306,tRNA processing,CHEBI:16680,"['O14717', 'Q9NXH9', 'Q9UBP6', 'Q96FX7']",,0.0583563822659793
+12,12,R-HSA-947581,Molybdenum cofactor biosynthesis,CHEBI:16027,"['O96033', 'O95396', 'Q9NQX3', 'O96007']",,2.5809802295384543e-08
+17,17,R-HSA-5668914,Diseases of metabolism,CHEBI:16556,['P20774'],,0.1926741698485855
+18,18,R-HSA-5668914,Diseases of metabolism,CHEBI:16680,['P23526'],,0.1926741698485855
+19,19,R-HSA-5668914,Diseases of metabolism,CHEBI:16264,"['P46531', 'P78333', 'Q8NES3']",,0.1926741698485855
+20,20,R-HSA-1280215,Cytokine Signaling in Immune system,CHEBI:16027,"['P05161', 'P19174', 'P41226', 'P20592', 'P20591']",,0.1967104904383241
+29,29,R-HSA-446193,"Biosynthesis of the N-glycan precursor (dolichol lipid-linked oligosaccharide, LLO) and transfer to a nascent protein",CHEBI:16556,"['P61647', 'Q16842', 'Q11206', 'Q11201', 'Q9UJ37']",,0.130994060731456
+30,30,R-HSA-446193,"Biosynthesis of the N-glycan precursor (dolichol lipid-linked oligosaccharide, LLO) and transfer to a nascent protein",CHEBI:17659,['Q9Y673'],,0.130994060731456
+33,33,R-HSA-74160,Gene expression (Transcription),CHEBI:16027,"['P62487', 'Q12962', 'P52655', 'Q15543', 'Q92750', 'P36954', 'O00268', 'P51948']",,0.1544947083579609
+34,34,R-HSA-74160,Gene expression (Transcription),CHEBI:16680,"['Q15022', 'O43189', 'O75182', 'Q96LA8', 'P0C0S5', 'Q96JY0', 'Q9UBC3', 'Q09028', 'Q96ST3', 'O00422', 'Q9BTM1', 'Q92831', 'P62805', 'O75530', 'Q71DI3']",,0.1544947083579609
+35,35,R-HSA-1474165,Reproduction,CHEBI:16680,"['P62805', 'Q9BTM1', 'P0C0S5', 'Q71DI3']",,1.871597088975996e-07
+42,42,R-HSA-6782315,tRNA modification in the nucleus and cytosol,CHEBI:16027,"['Q14657', 'Q96S44']",,0.0480437423337922
+53,53,R-HSA-1638074,Keratan sulfate/keratin metabolism,CHEBI:16556,"['P20774', 'Q16842', 'Q11206', 'Q11201']",,0.1544947083579609
+54,54,R-HSA-1638074,Keratan sulfate/keratin metabolism,CHEBI:17659,"['O60512', 'P20774', 'Q9Y2A9', 'Q8NFL0']",,0.1544947083579609
+55,55,R-HSA-1638074,Keratan sulfate/keratin metabolism,CHEBI:16264,"['Q8NFL0', 'P20774', 'Q9Y2A9']",,0.1544947083579609
+56,56,R-HSA-446219,Synthesis of substrates in N-glycan biosythesis,CHEBI:16556,"['P61647', 'Q16842', 'Q11206', 'Q11201', 'Q9UJ37']",,0.130994060731456
+57,57,R-HSA-446219,Synthesis of substrates in N-glycan biosythesis,CHEBI:17659,['Q9Y673'],,0.130994060731456

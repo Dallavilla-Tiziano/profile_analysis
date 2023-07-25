@@ -22,6 +22,7 @@ from supervenn import supervenn
 import sympy as sym
 from tqdm import tqdm
 import mygene
+from statsmodels.stats.multitest import fdrcorrection
 
 
 
@@ -436,7 +437,7 @@ class ProfileAnalysis:
             y0_min = row.min()
             y0_max = row.max()
             # self.bounds = ([4, 0, 0, -1000], [5, np.inf, np.inf, 1000])
-            self.bounds = ([0, -np.inf, -np.inf, -1000], [9, np.inf, np.inf, 1000])
+            self.bounds = ([0, -np.inf, -np.inf, -1000], [9, np.inf, np.inf, 100])
             try:
                 if guess_bounds:
                     parameters, pcov = curve_fit(self.sigmoid_func,
@@ -516,7 +517,7 @@ class ProfileAnalysis:
                 poly_models[result[0].columns[0]] = result[1]
             results = Parallel(n_jobs=self.cores)(delayed(self.sigmoid_fitting)(group, guess_bounds) for i, group in table.groupby(np.arange(len(table)) // self.cores))
             for result in results:
-                sigmoid_scores = sigmoid_scores.append(result[0])
+                sigmoid_scores = sigmoid_scores.append(result[0]) ## MODIFY (FUTURE WARNING)
                 sig_models.update(result[1])
             poly_scores.to_csv('/'.join([self.data_fitting, 'polynomial_scores.csv']))
             sigmoid_scores.to_csv('/'.join([self.data_fitting, 'sigmoid_scores.csv']))
@@ -615,6 +616,8 @@ class ProfileAnalysis:
 
         return rand_fitting_score_poly, rand_fitting_score_sig, sig_models
 
+
+
     def gof_dist(self, obs_score_list, perm_score_list, degree, dist_obs, dist_perm, pdf_perm, pdf_obs, vline):
 
         a, b, loc, scale = beta.fit(perm_score_list)
@@ -626,9 +629,7 @@ class ProfileAnalysis:
         pdf_data = beta.pdf(x, a1, b1, loc1, scale1)
 
         # t_list = perm_score_list[np.logical_not(np.isnan(perm_score_list))]
-        t = np.quantile(perm_score_list,self.t_area)
-
-        threshold = beta.ppf(self.t_area, a, b, loc, scale)
+        t = np.quantile(perm_score_list, self.t_area)
         bins = np.histogram(np.hstack((obs_score_list, perm_score_list)), bins=100)[1]
         plt.figure(figsize=(10, 10))
         # plt.title(f'model degree: {degree}')
@@ -694,10 +695,20 @@ class ProfileAnalysis:
         plt.savefig('/'.join([self.figures, 'gof_normal_vs_perm.svg']), format='svg', transparent=True)
         plt.show()
 
+    def getQ(self, obs_score, poly_perm_score_list, degree):
+        a, b, loc, scale = beta.fit(poly_perm_score_list)
+        observables_pq = pd.DataFrame(columns=['q-value', 'p-value'])
+        for index, row in obs_score.iterrows():
+            observables_pq.loc[index, 'p-value'] = 1-beta.cdf(row[degree], a, b, loc, scale)
+        temp = fdrcorrection(observables_pq['p-value'])[1]
+        observables_pq['q-value'] = temp
+        return observables_pq
+
     def plot_gof(self, poly_obs_fit_scores, sig_obs_fit_scores, poly_perm_fit_scores, sig_perm_fit_scores, dist_obs=True, dist_perm=True, pdf_perm=True, pdf_obs=False, vline=True):
         """
         Plot r score distribution for normal and permutated data for each model analysed
         """
+        scores_table = pd.DataFrame()
         poly_perm_score_lists = []
         for i in range(0, self.degree_2_test):
             temp = []
@@ -719,27 +730,38 @@ class ProfileAnalysis:
         self.gof_performance(poly_obs_score_lists, sig_obs_score_lists, poly_perm_score_lists, sig_perm_score_lists)
 
         sig_threshold = self.gof_dist(sig_obs_score_lists, sig_perm_score_lists[0], 'sigmoid', dist_obs, dist_perm, pdf_perm, pdf_obs, vline)
+        qs_sigmoid = self.getQ(poly_obs_fit_scores, sig_perm_score_lists[0], 'sigmoidal')
+        scores_table['sigmoidal'] = qs_sigmoid['q-value']
+        # scores_table['sigmoid-p'] = qs_sigmoid['p-value']
         # stats, pvalue = mannwhitneyu(sig_obs_score_lists, sig_perm_score_lists[0])
         stats, pvalue = mannwhitneyu(sig_obs_score_lists, sig_perm_score_lists[0], alternative='greater')
         stats_models = {}
         stats_models['sigmoidal'] = [stats, pvalue, sig_threshold]
         for i in range(0, len(poly_perm_score_lists)):
             poly_threshold = self.gof_dist(poly_obs_score_lists[i], poly_perm_score_lists[i], i+1, dist_obs, dist_perm, pdf_perm, pdf_obs, vline)
+            qs = self.getQ(poly_obs_fit_scores, poly_perm_score_lists[i], i+1)
+            scores_table[f'{i+1}'] = qs['q-value']
+            # scores_table[f'{i+1}-p'] = qs['p-value']
             # stats, pvalue = mannwhitneyu(poly_obs_score_lists[i], poly_perm_score_lists[i])
             stats, pvalue = mannwhitneyu(poly_obs_score_lists[i], poly_perm_score_lists[i], alternative='greater')
             stats_models[i+1] = [stats, pvalue, poly_threshold]
-
+#
         self.stats_models = stats_models
         pd.DataFrame(stats_models).to_csv('/'.join([self.output, 'stats_models.csv']))
-        return stats_models
+        return stats_models, scores_table
 
-    def cluster_genes(self, models_scores):
+    def cluster_genes(self, models_scores, qs_scores):
         genes_clusters = {}
+        genes_clusters_qs = {}
         for column in models_scores.columns:
             temp = models_scores.sort_values(column, ascending=False)
             temp = temp[temp[column] > self.stats_models[column][2]]
             genes_clusters[column] = set(temp.index)
-        return genes_clusters
+        for column in qs_scores.columns:
+            temp = qs_scores.sort_values(column, ascending=False)
+            temp = temp[temp[column] <= 0.2]
+            genes_clusters_qs[column] = set(temp.index)
+        return genes_clusters, genes_clusters_qs
 
     def plot_clusters(self, genes_clusters):
         clusters = []
@@ -753,6 +775,38 @@ class ProfileAnalysis:
         plt.tight_layout()
         plt.savefig('/'.join([self.figures, 'super_venn.svg']), format='svg')
         plt.show()
+
+    def classifyGenes(self, genes_clusters, scores_table):
+        clustered_genes_list = []
+        for key in genes_clusters.keys():
+            clustered_genes_list = clustered_genes_list+list(genes_clusters[key])
+        clustered_genes_list = set(clustered_genes_list)
+        scores = scores_table.loc[clustered_genes_list]
+        continuous = list(scores[scores['sigmoidal']>0.2].index)
+        discarded = []
+        sigmoid = []
+        scores_to_check = scores[scores['sigmoidal']<0.2]
+        scores_to_check_sigmoid = scores_to_check[['sigmoidal']]
+        scores_to_check.drop('sigmoidal', axis=1, inplace=True)
+        for index, row in scores_to_check.iterrows():
+            if (row>0.2).all():
+                sigmoid.append(index)
+            else:
+                ratio = min(row)/scores_to_check_sigmoid.loc[index, 'sigmoidal']
+                if ratio >= 1.2:
+                    print('sigmoid')
+                    print(index)
+                    sigmoid.append(index)
+                elif ratio <= 0.83:
+                    print(continuous)
+                    print(index)
+                    continuous.append(index)
+                else:
+                    discarded.append(index)
+        pd.DataFrame(sigmoid, columns=['id']).to_csv('/'.join([self.output, 'sigmoid_by_qs.csv']))
+        pd.DataFrame(continuous, columns=['id']).to_csv('/'.join([self.output, 'continuous_by_qs.csv']))
+        pd.DataFrame(discarded, columns=['id']).to_csv('/'.join([self.output, 'discarded_by_qs.csv']))
+        return sigmoid, continuous, discarded
 
     def get_summary_table(self, genes_clusters, models_scores):
         for key in self.stats_models.keys():
@@ -917,17 +971,17 @@ class ProfileAnalysis:
                 degree = 'sigmoid'
                 y = self.sigmoid_func(x, sig_models[key][0], sig_models[key][1], sig_models[key][2], sig_models[key][3])
             elif model == 'continuum':
-                degree = int(scores_table.loc[key,'model'])
+                degree = 1
                 y = np.polynomial.polynomial.polyval(x, poly_models[degree][key])
             elif model == 'both':
                 degree = int(scores_table.loc[key,'model'])
                 y1 = self.sigmoid_func(x, sig_models[key][0], sig_models[key][1], sig_models[key][2], sig_models[key][3])
                 y2 = np.polynomial.polynomial.polyval(x, poly_models[degree][key])
-            if key in scores_table.index:
-                score = round(scores_table.loc[key,'score'], 3)
-            else:
-                score = 'NA'
             if title:
+                if key in scores_table.index:
+                    score = round(scores_table.loc[key,'score'], 3)
+                else:
+                    score = 'NA'
                 plt.title(f'{key}, model:{degree}, score:{score}')
             if plot_fit and model!='both':
                 plt.plot(x, y, color='red', ls='-', linewidth=2)
@@ -1009,12 +1063,12 @@ class ProfileAnalysis:
         f = c / (1 + sym.exp(-k*(x-x0))) + y0
         f_prime = f.diff(x)
         f_prime = sym.lambdify([(x, x0, y0, c, k)], f_prime)
-        x = np.linspace(self.x[0], self.x[-1], 2000)
+        x = np.linspace(self.x[0], self.x[-1], 10000)
         plt.figure(figsize=(10, 10))
-        for key in list(sigmoid_genes.index):
+        for key in sigmoid_genes:
             d_ = []
             for i in x:
-                d_.append(abs(f_prime(np.insert(sig_models[key],0,i))))
+                d_.append(abs(f_prime(np.insert(sig_models[key],1,i))))
             index_min = np.argmax(d_)
             section = list(self.sections.keys())[int(round(x[index_min]))-1]
             if section in ['Transverse colon', 'Descending colon']:

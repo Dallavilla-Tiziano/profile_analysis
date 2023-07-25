@@ -1,0 +1,3 @@
+,pathway_id,pathway_name,metabolite,genes_uniprot,genes_symbol,q_value
+0,R-HSA-72766,Translation,CHEBI:16027,['O43776'],,0.11315083007457583
+1,R-HSA-392499,Metabolism of proteins,CHEBI:16027,['O43776'],,0.11315083007457583

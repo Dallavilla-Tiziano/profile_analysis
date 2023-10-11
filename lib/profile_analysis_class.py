@@ -748,7 +748,6 @@ class ProfileAnalysis:
                 score = row[model]
                 background = backgrounds[model].loc[index].dropna()
                 result = self.calculate_p_norm(index, score, background)
-    #             result = calculate_p_beta(index, score, background)
                 p_value_tables.loc[result[0], model] = result[1]
         return p_value_tables
 
@@ -772,14 +771,13 @@ class ProfileAnalysis:
         q_by_model = pd.DataFrame()
         for key in models:
             q_by_model = pd.concat([q_by_model, q_values.loc[models[key]][key]], axis=1)
-    #     to_evaluate = q_by_model
-    #     if 'sigmoidal' in q_by_model.columns:
-        to_evaluate = q_by_model.loc[q_by_model.dropna(subset=['sigmoidal']).index]
+        if 'sigmoidal' in q_by_model.columns:
+            to_evaluate = q_by_model.loc[q_by_model.dropna(subset=['sigmoidal']).index]
+        else:
+            to_evaluate = q_by_model.loc[q_by_model.index]
         continuous = q_by_model.drop(to_evaluate.index, axis=0)
         if 'sigmoidal' in q_by_model.columns:
             to_evaluate = q_by_model.dropna(subset=['sigmoidal'])
-        #     for key in to_evaluate:
-        #         to_evaluate[key] = to_evaluate[key]/statistics.median(q_by_model[key].dropna())
             polynomial_columns = [col for col in to_evaluate.columns if col != 'sigmoidal']
             to_evaluate.dropna(subset=polynomial_columns, how='all', inplace=True)
             sigmoid = q_by_model.drop(to_evaluate.index, axis=0)

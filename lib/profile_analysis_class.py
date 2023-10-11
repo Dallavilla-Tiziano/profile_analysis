@@ -16,12 +16,11 @@ from sklearn.metrics import r2_score
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from scipy.stats import mannwhitneyu, beta, median_abs_deviation
+from scipy.stats import mannwhitneyu, beta, median_abs_deviation, norm
 from scipy.optimize import curve_fit
 from supervenn import supervenn
 import sympy as sym
 from tqdm import tqdm
-import mygene
 from statsmodels.stats.multitest import fdrcorrection
 
 
@@ -56,7 +55,6 @@ class ProfileAnalysis:
             raise FileNotFoundError("SETTINGS.ini could not be found, the "
                                     "project can't be created. Please check "
                                     f"the documentation at {self.github}")
-        mg = mygene.MyGeneInfo()
 
     def load_configuration(self):
         """Read settings from SETTINGS.ini."""
@@ -266,44 +264,32 @@ class ProfileAnalysis:
         sample_to_section.to_csv(os.path.join(self.output,
                                  'samples_by_sections.csv'), index=False)
 
-    def calculate_median_by_section_numeric(self, table, remove_outliers):
+    def calculate_median_by_section_numeric(self, measurements):
         """
         Calculate samples median and mad values for each section.
-        Genes with a % of zero measurments above 'sample_0_t'
+        Genes with a % of zero measurements above 'sample_0_t'
         (defined in settings) are discarded from the analysis.
 
         Parameters
         ----------
-        feature : DataFrame
-            row of self.data_table containing measurments for a single gene
-
-        remove_outliers : bool
-            if true remove samples outside range 'median+/-2.5*MAD' before
-            calculation of median by section
+        measurements : DataFrame
+            table containing measurements for each sample
 
         Returns
         -------
         medians_df : DataFrame
             DataFrame with median values per section. If the number of zero
-            measurment is above 'sample_t_0' DataFrame will be empty.
+            measurements is above 'sample_t_0' DataFrame will be empty.
 
         mad_df : DataFrame
             DataFrame with MAD for eah section.
         """
         medians_df = pd.DataFrame()
         mad_df = pd.DataFrame()
-        for index, feature in table.iterrows():
+        for index, feature in measurements.iterrows():
             if int(feature.isin([0]).sum())/len(feature) <= self.sample_0_t:
                 for section in self.sections:
-                    if remove_outliers:
-                        section_samples = feature[self.samples2sections[section]]
-                        median = np.median(section_samples)
-                        mad_inf = median - 2.5*mad
-                        mad_sup = median + 2.5*mad
-                        values = [i for i in feature
-                                  if mad_inf < i < mad_sup]
-                    else:
-                        values = feature[self.samples2sections[section]]
+                    values = feature[self.samples2sections[section]]
                     median = np.median(values)
                     mad = median_abs_deviation(values)
                     medians_df.loc[index, section] = median
@@ -313,7 +299,7 @@ class ProfileAnalysis:
         mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 
-    def calculate_median_by_section_binary(self, table):
+    def calculate_median_by_section_binary(self, measurements):
         """
         Calculate samples median and mad values for each section.
         Genes with a % of zero measurments above 'sample_0_t'
@@ -322,7 +308,7 @@ class ProfileAnalysis:
         Parameters
         ----------
         feature : DataFrame
-            row of self.data_table containing measurments for a single gene
+            table containing measurements for each sample
 
         remove_outliers : bool
             if true remove samples outside range 'median+/-2.5*MAD' before
@@ -339,10 +325,10 @@ class ProfileAnalysis:
         """
         medians_df = pd.DataFrame()
         mad_df = pd.DataFrame()
-        for index, row in table.iterrows():
+        for index, row in measurements.iterrows():
             for section in self.sections:
-                cnv=(row[self.samples2sections[section]]>=1).sum()
-                nocnv=(row[self.samples2sections[section]]==0).sum()
+                cnv = (row[self.samples2sections[section]] >= 1).sum()
+                nocnv = (row[self.samples2sections[section]] == 0).sum()
                 frac = cnv/(cnv+nocnv)*100
                 medians_df.loc[index, section] = frac
         if self.medians_nan == 'drop':
@@ -350,20 +336,13 @@ class ProfileAnalysis:
         # mad_df = mad_df.loc[medians_df.index]
         return medians_df, mad_df
 
-    def median_by_section(self, remove_outliers=False, scale=False):
+    def median_by_section(self):
         """
         Wrapper of (calculate_median_by_section).Calculate gene expression
         median and median absolute deviation (MAD) values for each section.
 
         Parameters
         ----------
-        remove_outliers : bool
-            if true remove samples outside range 'median+/-2.5*MAD' before
-            calculation of median by section
-
-        scale : bool
-            if true median and mad are returned as relative quantities
-            (normalized by row sum)
 
         Returns
         -------
@@ -380,7 +359,7 @@ class ProfileAnalysis:
             medians = pd.DataFrame()
             mad = pd.DataFrame()
             if self.data_type == 'numeric':
-                calc_res = Parallel(n_jobs=self.cores)(delayed(self.calculate_median_by_section_numeric)(group, remove_outliers) for i, group in self.data_table.groupby(np.arange(len(self.data_table)) // self.cores))
+                calc_res = Parallel(n_jobs=self.cores)(delayed(self.calculate_median_by_section_numeric)(group) for i, group in self.data_table.groupby(np.arange(len(self.data_table)) // self.cores))
             elif self.data_type == 'binary':
                 calc_res = Parallel(n_jobs=self.cores)(delayed(self.calculate_median_by_section_binary)(group) for i, group in self.data_table.groupby(np.arange(len(self.data_table)) // self.cores))
 
@@ -390,12 +369,6 @@ class ProfileAnalysis:
                     # medians.loc[res[0].index]=res[0]
                     # mad = mad.append(res[1])
                     mad = pd.concat([mad, res[1]])
-
-            if scale:
-                for index, row in medians.iterrows():
-                    medians.loc[index, :] = row/row.sum()
-                for index, row in mad.iterrows():
-                    mad.loc[index, :] = row/row.sum()
             medians.to_csv('/'.join([self.sample_by_section, 'median_by_sections.csv']))
             mad.to_csv('/'.join([self.sample_by_section, 'mad_by_sections.csv']))
         else:
@@ -437,7 +410,7 @@ class ProfileAnalysis:
             y0_min = row.min()
             y0_max = row.max()
             # self.bounds = ([4, 0, 0, -1000], [5, np.inf, np.inf, 1000])
-            self.bounds = ([0, -np.inf, -np.inf, -1000], [9, np.inf, np.inf, 100])
+            self.bounds = ([0, -np.inf, -np.inf, -1000], [9, np.inf, np.inf, 1000])
             try:
                 if guess_bounds:
                     parameters, pcov = curve_fit(self.sigmoid_func,
@@ -616,8 +589,6 @@ class ProfileAnalysis:
 
         return rand_fitting_score_poly, rand_fitting_score_sig, sig_models
 
-
-
     def gof_dist(self, obs_score_list, perm_score_list, degree, dist_obs, dist_perm, pdf_perm, pdf_obs, vline):
 
         a, b, loc, scale = beta.fit(perm_score_list)
@@ -750,6 +721,97 @@ class ProfileAnalysis:
         pd.DataFrame(stats_models).to_csv('/'.join([self.output, 'stats_models.csv']))
         return stats_models, scores_table
 
+    def select_significant_models(self, p_values, observables_scores):
+        for key in p_values:
+            if p_values[key][1] > 0.05:
+                observables_scores.drop(key, axis=1, inplace=True)
+        return observables_scores
+
+    def assemble_backgrounds(self, poly_obs_scores, sig_perm_scores, poly_perm_scores):
+        backgrounds = {}
+        for column in poly_obs_scores.columns:
+            if column == 'sigmoidal':
+                backgrounds[column] = sig_perm_scores
+            else:
+                backgrounds[column] = poly_perm_scores[column-1]
+        return backgrounds
+
+    def calculate_p_norm(self, name, observable, background):
+        mu, std = norm.fit(background.astype('float'))
+        p_value = 1-norm.cdf(observable, mu, std)
+        return (name, p_value)
+
+    def get_p_values(self, poly_obs_scores, backgrounds):
+        p_value_tables = pd.DataFrame(index=poly_obs_scores.index, columns=poly_obs_scores.columns)
+        for index, row in poly_obs_scores.iterrows():
+            for model in row.index:
+                score = row[model]
+                background = backgrounds[model].loc[index].dropna()
+                result = self.calculate_p_norm(index, score, background)
+    #             result = calculate_p_beta(index, score, background)
+                p_value_tables.loc[result[0], model] = result[1]
+        return p_value_tables
+
+    def get_q_values(self, p_value_tables, poly_obs_scores):
+        q_value_tables = pd.DataFrame(index=poly_obs_scores.index, columns=poly_obs_scores.columns)
+        for column in p_value_tables:
+            q_value_tables[column] = fdrcorrection(p_value_tables[column])[1]
+        return q_value_tables
+
+    def classify_genes(self, observables_scores, q_values, q_tresh, sd):
+        columns = []
+        for column in observables_scores.columns:
+            columns.append(str(column))
+        observables_scores.columns = columns
+        q_values.columns = columns
+
+        models = {}
+        for column in q_values:
+            models[column] = list(q_values[q_values[column]<=q_tresh].index)
+
+        q_by_model = pd.DataFrame()
+        for key in models:
+            q_by_model = pd.concat([q_by_model, q_values.loc[models[key]][key]], axis=1)
+    #     to_evaluate = q_by_model
+    #     if 'sigmoidal' in q_by_model.columns:
+        to_evaluate = q_by_model.loc[q_by_model.dropna(subset=['sigmoidal']).index]
+        continuous = q_by_model.drop(to_evaluate.index, axis=0)
+        if 'sigmoidal' in q_by_model.columns:
+            to_evaluate = q_by_model.dropna(subset=['sigmoidal'])
+        #     for key in to_evaluate:
+        #         to_evaluate[key] = to_evaluate[key]/statistics.median(q_by_model[key].dropna())
+            polynomial_columns = [col for col in to_evaluate.columns if col != 'sigmoidal']
+            to_evaluate.dropna(subset=polynomial_columns, how='all', inplace=True)
+            sigmoid = q_by_model.drop(to_evaluate.index, axis=0)
+            sigmoid = sigmoid.drop(continuous.index, axis=0)
+            only_continuous = to_evaluate.drop('sigmoidal', axis=1)
+            for index, row in only_continuous.iterrows():
+                min_q = pd.to_numeric(row).idxmin()
+                only_continuous.loc[index, only_continuous.columns != min_q] = np.nan
+            for column in only_continuous.columns:
+                only_continuous.iloc[:,0].fillna(only_continuous[column], inplace=True)
+            to_evaluate['continuous'] = only_continuous.iloc[:,0]
+            to_evaluate = to_evaluate[['continuous', 'sigmoidal']]
+            for index, row in to_evaluate.iterrows():
+                to_evaluate.loc[index, 'ratio'] = abs(row['continuous']-row['sigmoidal'])/max([row['continuous'],row['sigmoidal']])
+                to_evaluate.loc[index, 'best_q'] = pd.to_numeric(row).idxmin()
+            discarded = list(to_evaluate[(to_evaluate['ratio']<sd)].index)
+            to_evaluate = to_evaluate[to_evaluate['ratio']>sd]
+            sigmoid = list(sigmoid.index)
+        continuous = list(continuous.index)
+        for index, row in to_evaluate.iterrows():
+            if ('best_q' in row) and (row['best_q'] == 'sigmoidal'):
+                sigmoid.append(index)
+            else:
+                continuous.append(index)
+        classification = {}
+        if 'sigmoidal' in q_by_model.columns:
+            classification['sigmoid'] = sigmoid
+            classification['discarded'] = discarded
+        classification['continuous'] = continuous
+
+        return classification
+
     def cluster_genes(self, models_scores, qs_scores):
         genes_clusters = {}
         genes_clusters_qs = {}
@@ -829,69 +891,69 @@ class ProfileAnalysis:
         summary_table.to_csv('/'.join([self.output, 'summary.csv']))
         return summary_table
 
-    def classify_genes(self, summary):
-        if 'sigmoidal' in summary.columns:
-            cont = summary[summary['sigmoidal'] == False]
-            sig_raw = summary[summary['sigmoidal'] == True]
-            discarded = pd.DataFrame(columns=sig_raw.columns)
-            discarded= {}
-            sigmoid = {}
-            cont_significant_status = sig_raw.select_dtypes(include='bool')
-            cont_score = sig_raw.select_dtypes(include='float')
-            cont_score.columns = cont_significant_status.columns
-            cont_score.drop(['sigmoidal'], axis=1, inplace=True)
-            cont_significant_status.drop(['sigmoidal'], axis=1, inplace=True)
-
-            for index, row in sig_raw.iterrows():
-                if (cont_significant_status.loc[index] == True).any():
-                    indexes_to_compare = list(cont_significant_status.loc[index][cont_significant_status.loc[index]==True].index)
-                    max_index = cont_score.loc[index, indexes_to_compare].idxmax()
-                    discard = 2
-
-                    if row[f'{max_index}_score']-row['sigmoidal_score'] > 0.2:
-                        discard = 1
-                    elif row['sigmoidal_score'] - row[f'{max_index}_score'] > 0.2:
-                        discard = 0
-
-                    if discard == 1:
-                        cont.loc[index] = row
-                    elif discard == 0:
-                        sigmoid[index] = row
-                    else:
-                        discarded[index] = row
-                        # print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
-                else:
-                    sigmoid[index] = row
-        else:
-            cont = summary
-            sigmoid = pd.DataFrame()
-            discarded = pd.DataFrame()
-
-        cont = cont.select_dtypes(include='float')
-        sigmoid=pd.DataFrame(sigmoid).T
-        if not sigmoid.empty:
-            sigmoid = sigmoid.astype(cont.dtypes.to_dict())
-            sigmoid = sigmoid.select_dtypes(include='float')
-        discarded=pd.DataFrame(discarded).T
-        if not discarded.empty:
-            discarded = discarded.astype(cont.dtypes.to_dict())
-            discarded = discarded.select_dtypes(include='float')
-        continuos_res = pd.DataFrame()
-        sigmoid_res = pd.DataFrame()
-        discarded_res = pd.DataFrame()
-        for index, row in cont.iterrows():
-            continuos_res.loc[index, 'model'] = cont.loc[index].idxmax().split('_')[0]
-            continuos_res.loc[index, 'score'] = cont.loc[index, cont.loc[index].idxmax()]
-        for index, row in sigmoid.iterrows():
-            sigmoid_res.loc[index, 'model'] = 'sigmoid'
-            sigmoid_res.loc[index, 'score'] = sigmoid.loc[index, 'sigmoidal_score']
-        for index, row in discarded.iterrows():
-            discarded_res.loc[index, 'model'] = 'sigmoid'
-            # discarded_res.loc[index, 'score'] = sigmoid.loc[index, 'sigmoidal_score']
-        sigmoid_res.to_csv('/'.join([self.output, 'sigmoidal.csv']))
-        continuos_res.to_csv('/'.join([self.output, 'continuum.csv']))
-        discarded_res.to_csv('/'.join([self.output, 'discarded.csv']))
-        return continuos_res, sigmoid_res, discarded_res
+    # def classify_genes(self, summary):
+    #     if 'sigmoidal' in summary.columns:
+    #         cont = summary[summary['sigmoidal'] == False]
+    #         sig_raw = summary[summary['sigmoidal'] == True]
+    #         discarded = pd.DataFrame(columns=sig_raw.columns)
+    #         discarded= {}
+    #         sigmoid = {}
+    #         cont_significant_status = sig_raw.select_dtypes(include='bool')
+    #         cont_score = sig_raw.select_dtypes(include='float')
+    #         cont_score.columns = cont_significant_status.columns
+    #         cont_score.drop(['sigmoidal'], axis=1, inplace=True)
+    #         cont_significant_status.drop(['sigmoidal'], axis=1, inplace=True)
+    #
+    #         for index, row in sig_raw.iterrows():
+    #             if (cont_significant_status.loc[index] == True).any():
+    #                 indexes_to_compare = list(cont_significant_status.loc[index][cont_significant_status.loc[index]==True].index)
+    #                 max_index = cont_score.loc[index, indexes_to_compare].idxmax()
+    #                 discard = 2
+    #
+    #                 if row[f'{max_index}_score']-row['sigmoidal_score'] > 0.2:
+    #                     discard = 1
+    #                 elif row['sigmoidal_score'] - row[f'{max_index}_score'] > 0.2:
+    #                     discard = 0
+    #
+    #                 if discard == 1:
+    #                     cont.loc[index] = row
+    #                 elif discard == 0:
+    #                     sigmoid[index] = row
+    #                 else:
+    #                     discarded[index] = row
+    #                     # print(f'Sigmoid and continuos score for gene {index} are too close, gene will be discarded.')
+    #             else:
+    #                 sigmoid[index] = row
+    #     else:
+    #         cont = summary
+    #         sigmoid = pd.DataFrame()
+    #         discarded = pd.DataFrame()
+    #
+    #     cont = cont.select_dtypes(include='float')
+    #     sigmoid=pd.DataFrame(sigmoid).T
+    #     if not sigmoid.empty:
+    #         sigmoid = sigmoid.astype(cont.dtypes.to_dict())
+    #         sigmoid = sigmoid.select_dtypes(include='float')
+    #     discarded=pd.DataFrame(discarded).T
+    #     if not discarded.empty:
+    #         discarded = discarded.astype(cont.dtypes.to_dict())
+    #         discarded = discarded.select_dtypes(include='float')
+    #     continuos_res = pd.DataFrame()
+    #     sigmoid_res = pd.DataFrame()
+    #     discarded_res = pd.DataFrame()
+    #     for index, row in cont.iterrows():
+    #         continuos_res.loc[index, 'model'] = cont.loc[index].idxmax().split('_')[0]
+    #         continuos_res.loc[index, 'score'] = cont.loc[index, cont.loc[index].idxmax()]
+    #     for index, row in sigmoid.iterrows():
+    #         sigmoid_res.loc[index, 'model'] = 'sigmoid'
+    #         sigmoid_res.loc[index, 'score'] = sigmoid.loc[index, 'sigmoidal_score']
+    #     for index, row in discarded.iterrows():
+    #         discarded_res.loc[index, 'model'] = 'sigmoid'
+    #         # discarded_res.loc[index, 'score'] = sigmoid.loc[index, 'sigmoidal_score']
+    #     sigmoid_res.to_csv('/'.join([self.output, 'sigmoidal.csv']))
+    #     continuos_res.to_csv('/'.join([self.output, 'continuum.csv']))
+    #     discarded_res.to_csv('/'.join([self.output, 'discarded.csv']))
+    #     return continuos_res, sigmoid_res, discarded_res
 
     def plot_fitting(self, scores_table, gene_indexes_list, medians, poly_models, sig_models, model, boxplots=True, save_as='', plot_fit=True, ylabel='', title=True, set_lim=[]):
         medianprops = dict(linestyle='None')
